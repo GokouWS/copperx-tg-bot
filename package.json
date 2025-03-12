@@ -15,8 +15,12 @@
   "dependencies": {
     "axios": "^1.8.3",
     "dotenv": "^16.4.7",
+    "ioredis": "^5.6.0",
     "pusher": "^5.2.0",
-    "telegraf": "^4.16.3"
+    "redis": "^4.7.0",
+    "telegraf": "^4.16.3",
+    "telegraf-ratelimit": "^2.0.0",
+    "telegraf-session-redis": "^5.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",
