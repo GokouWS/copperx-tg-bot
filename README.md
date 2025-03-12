@@ -7,6 +7,7 @@ This is a Telegram bot designed to interact with the Copperx platform.  It allow
 The project is organized as follows:
 
 
+```
 copperx-telegram-bot/
 ├── node_modules/                 # (Automatically created by pnpm - DO NOT TRACK)
 ├── src/                          # Source code for the bot
@@ -29,3 +30,4 @@ copperx-telegram-bot/
 ├── package.json                  # Project dependencies, scripts, and metadata.
 ├── tsconfig.json                 # TypeScript configuration.
 └── .gitignore                    # Specifies intentionally untracked files that Git should ignore.
+```
