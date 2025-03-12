@@ -1,26 +1,31 @@
-# copperx-tg-bot
+# Copperx Telegram Bot
 
-## File structure
+This is a Telegram bot designed to interact with the Copperx platform.  It allows users to perform actions such as checking balances, sending and receiving funds, and managing their Copperx account, all within Telegram.
+
+## Project Structure
+
+The project is organized as follows:
+
 
 copperx-telegram-bot/
-├── node_modules/ (Automatically created by pnpm)
-├── src/
-│ ├── api/
-│ │ └── index.ts (Copperx API interaction)
-│ ├── commands/
-│ │ ├── balance.ts (/balance and related commands)
-│ │ ├── login.ts (/login)
-│ │ ├── send.ts (/send)
-│ │ ├── withdraw.ts (/withdraw)
-│ │ └── index.ts (Combines all command modules)
-│ ├── events/
-│ └── deposit.ts (Handles deposit notifications)
-│ ├── utils/
-│ │ ├── helpers.ts (Utility functions, e.g., formatting)
-│ │ └── middleware.ts (Authentication middleware)
-│ ├── index.ts (Main bot entry point)
-│ └── bot.ts (Bot setup and initialization)
-├── .env (Environment variables - SECRET!)
-├── package.json (Project dependencies and scripts)
-├── tsconfig.json (TypeScript configuration)
-└── .gitignore (Files/folders to ignore in Git)
+├── node_modules/                 # (Automatically created by pnpm - DO NOT TRACK)
+├── src/                          # Source code for the bot
+│   ├── api/                      # Copperx API interaction
+│   │   └── index.ts              # Logic for interacting with the Copperx API.
+│   ├── commands/                 # Telegram bot commands
+│   │   ├── balance.ts            # Handles /balance and related commands (e.g., sub-commands, variations).
+│   │   ├── login.ts              # Handles /login command.
+│   │   ├── send.ts               # Handles /send command for sending funds.
+│   │   ├── withdraw.ts           # Handles /withdraw command.
+│   │   └── index.ts              # Combines and exports all command modules for easy access.
+│   ├── events/                   # Event handlers (besides commands)
+│   │   └── deposit.ts            # Handles deposit notification events.
+│   ├── utils/                    # Utility functions and middleware
+│   │   ├── helpers.ts            # Utility functions (e.g., currency formatting, data validation).
+│   │   └── middleware.ts         # Authentication middleware to protect commands.
+│   ├── index.ts                  # Main bot entry point (likely where the bot starts execution).
+│   └── bot.ts                    # Bot setup, initialization, and connection to Telegram.
+├── .env                          # Environment variables (API keys, bot token, etc. - KEEP THIS SECRET!)
+├── package.json                  # Project dependencies, scripts, and metadata.
+├── tsconfig.json                 # TypeScript configuration.
+└── .gitignore                    # Specifies intentionally untracked files that Git should ignore.
