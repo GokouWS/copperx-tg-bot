@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "dev": "nodemon src/index.ts",
+    "deploy": "pnpm run build && pnpm start"
   },
   "keywords": [],
   "author": "",
@@ -16,6 +19,7 @@
     "telegraf": "^4.16.3"
   },
   "devDependencies": {
-    "@types/node": "^22.13.10"
+    "@types/node": "^22.13.10",
+    "nodemon": "^3.1.9"
   }
 }
