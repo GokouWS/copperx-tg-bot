@@ -24,7 +24,7 @@ copperx-telegram-bot/
 │   ├── utils/                    # Utility functions and middleware
 │   │   ├── helpers.ts            # Utility functions (e.g., currency formatting, data validation).
 │   │   └── middleware.ts         # Authentication middleware to protect commands.
-│   ├── index.ts                  # Main bot entry point (likely where the bot starts execution).
+│   ├── index.ts                  # Main bot entry point.
 │   └── bot.ts                    # Bot setup, initialization, and connection to Telegram.
 ├── .env                          # Environment variables (API keys, bot token, etc. - KEEP THIS SECRET!)
 ├── package.json                  # Project dependencies, scripts, and metadata.
