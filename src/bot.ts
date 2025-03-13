@@ -49,11 +49,11 @@ Available Commands:
 /help - Show this help message
 /login - Log in to your Copperx account
 /balance - Check your wallet balances
-/default_wallet - View your default wallet
-/change_default_wallet - Change your default wallet
+/defaultwallet - View your default wallet
+/changedefaultwallet - Change your default wallet
 /send - Send funds
-/send_email - Send funds to an email address
-/send_wallet - Send funds to a wallet address
+/sendemail - Send funds to an email address
+/sendwallet - Send funds to a wallet address
 /last10transactions - View your last 10 transactions
 /withdraw - Withdraw funds to your bank account
   `);

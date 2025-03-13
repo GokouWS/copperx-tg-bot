@@ -16,9 +16,9 @@ export function setupCommands() {
 
   // Balance commands
   bot.command("balance", checkTokenExpiration, balance.handleBalance);
-  bot.command("default_wallet", checkTokenExpiration, balance.handleDefaultWallet);
+  bot.command("defaultwallet", checkTokenExpiration, balance.handleDefaultWallet);
   bot.command(
-    "change_default_wallet",
+    "changedefaultwallet",
     checkTokenExpiration,
     balance.handleChangeDefaultWallet,
   );
