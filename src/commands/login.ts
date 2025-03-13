@@ -10,6 +10,12 @@ import {
 import { escapeInput } from "../utils/helpers";
 import { handleApiError } from "../utils/errorHandler";
 
+// // Function to escape MarkdownV2 reserved characters *specifically within a URL*
+// function escapeMarkdownV2Url(url: string): string {
+//   // Only escape characters that are special *inside* a Markdown URL
+//   return url.replace(/[()]/g, "\\$&");
+// }
+
 export async function handleLogin(ctx: MyContext) {
   ctx.reply("Please enter your Copperx email address:");
   ctx.session.step = "awaitingEmail"; // Use context session
@@ -76,14 +82,30 @@ export async function handleOtpInput(ctx: MyContext) {
     ctx.reply("Login successful!");
 
     const userProfile = await getUserProfile(token);
-    ctx.reply(`Welcome, ${userProfile.firstName} ${userProfile.lastName}!`);
+    // console.log(userProfile);
+    if (!userProfile.firstName) {
+      ctx.reply(`Welcome, you are now logged in as ${userProfile.email}!`);
+    } else {
+      ctx.reply(`Welcome, ${userProfile.firstName} ${userProfile.lastName ?? ""}!`);
+    }
 
     const kycStatus = await getKycStatus(token);
     if (kycStatus.length > 0 && kycStatus[0].status === "approved") {
       ctx.reply("Your KYC is approved. You can now use all features.");
     } else {
+      // Escape the URL for MarkdownV2 *before* putting it in the link
+      // const kycUrl = "https://payout\\.copperx\\.io/app/kyc";
+      // const escapedKycUrl = escapeMarkdownV2Url(kycUrl); // Escape the URL
+      // const kycLink = `[Copperx platform](${kycUrl})`;
+      // const message = `Your KYC is not approved\\. Please complete your KYC on the ${kycLink}.`;
+      // ctx.reply(message, {
+      //   parse_mode: "MarkdownV2",
+      // });
       ctx.reply(
-        "Your KYC is not approved. Please complete your KYC on the Copperx platform.",
+        "Your KYC is not approved\\. Please complete your KYC on the [Copperx platform](https://payout\\.copperx\\.io/app/)",
+        {
+          parse_mode: "MarkdownV2",
+        },
       );
     }
     ctx.session.step = "idle";
