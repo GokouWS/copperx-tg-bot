@@ -37,7 +37,8 @@ export async function handleBalance(ctx: MyContext) {
           const formattedBalance = numericBalance.toFixed(balance.decimals);
 
           // Escape all relevant parts of the message!
-          message += `  \\- ${escapeInput(balance.symbol)}: ${escapeInput(formattedBalance)}\n\\(Address: \`${escapeInput(balance.address)}\`\\)\n\n`;
+          message += `  \\- ${escapeInput(balance.symbol)}: ${escapeInput(formattedBalance)}\n`;
+          message += ` Address: \`${balance.address}\`\n\n`;
         }
         message += "\n";
       }
@@ -60,11 +61,12 @@ export async function handleDefaultWallet(ctx: MyContext) {
         "You have no default wallet set. Please choose from the options to set a default wallet, or type /cancel to cancel:",
       );
     } else {
-      let message = "Your Default Wallet:\n";
-      message += `${defaultWallet.address} on ${defaultWallet.network} \n`;
-      ctx.reply(
-        message + "Reply with /change_default_wallet to change your default wallet",
-      );
+      let message = "Your Default Wallet:\n\n";
+      message += `*${escapeInput(defaultWallet.network)}*:\n`;
+      message += `Wallet ID: \`${defaultWallet.id}\`\n`;
+      message += `Address: \`${defaultWallet.walletAddress}\` \n\n`;
+      message += "Reply with /changedefaultwallet to change your default wallet";
+      ctx.reply(message, { parse_mode: "MarkdownV2" });
     }
   } catch (error) {
     handleApiError(ctx, error);
@@ -77,12 +79,14 @@ export async function handleChangeDefaultWallet(ctx: MyContext) {
   try {
     const wallets: WalletsResponse = await getWalletBalances(token); // Fetch the wallets to get possible IDs.
     let message =
-      "Your Wallets. Please reply with the Wallet ID that you want to set as your default:\n";
+      "Your Wallets\\:\nPlease reply with the Wallet ID that you want to set as your default:\n\n";
 
     for (const wallet of wallets) {
-      message += `${wallet.walletId}: Network: ${wallet.network}\n`;
+      message += `*${escapeInput(wallet.network)}*:\n`;
+      message += `Network: ${wallet.network}\n`;
+      message += `Wallet ID: \`${wallet.walletId}\`\n\n`;
     }
-    ctx.reply(message);
+    ctx.reply(message, { parse_mode: "MarkdownV2" });
     ctx.session.step = "awaitingWalletId"; // Set session step
   } catch (error) {
     handleApiError(ctx, error);
