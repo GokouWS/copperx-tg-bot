@@ -1,5 +1,9 @@
 // Main bot entry point
 import { bot } from "./bot";
+import { setupCommands } from "./commands";
+
+// Setup commands
+setupCommands();
 
 // Start the bot
 bot

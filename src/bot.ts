@@ -9,7 +9,26 @@ if (!process.env.TELEGRAM_BOT_TOKEN) {
   process.exit(1);
 }
 
-export const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
+//Extend the telegraf context
+interface SessionData {
+  step: "idle" | "awaitingEmail" | "awaitingOtp"; //Add additional steps as needed.
+  email?: string; //Store email
+}
+export interface MyContext extends Context {
+  session: SessionData;
+}
+
+const bot = new Telegraf<MyContext>(process.env.TELEGRAM_BOT_TOKEN);
+
+// In-memory session (replace with Redis later)
+bot.use(session());
+// Initialize session middleware and set default
+bot.use(async (ctx, next) => {
+  if (!ctx.session) {
+    ctx.session = { step: "idle" }; // Set default values.
+  }
+  await next();
+});
 
 // /start command
 bot.start((ctx: Context) => {
@@ -38,3 +57,5 @@ Available Commands:
 // Graceful shutdown
 process.once("SIGINT", () => bot.stop("SIGINT"));
 process.once("SIGTERM", () => bot.stop("SIGTERM"));
+
+export { bot };
