@@ -16,7 +16,7 @@ interface SessionData {
   sid?: string;
   tokenData?: {
     token: string;
-    expiresAt: number; //store the entire token data.
+    expireAt: number; //store the entire token data.
   };
 }
 export interface MyContext extends Context {

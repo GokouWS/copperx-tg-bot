@@ -97,7 +97,7 @@ export async function setDefaultWallet(token: string, walletId: string) {
 
 // Token Expiration check
 export function isTokenExpired(tokenData: any): boolean {
-  if (!tokenData || !tokenData.expiresAt) {
+  if (!tokenData || !tokenData.expireAt) {
     return true; // Assume expired if no data
   }
   // Compare expiresAt (which should be a UNIX timestamp in milliseconds) with the current time.

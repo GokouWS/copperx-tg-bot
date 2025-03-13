@@ -75,10 +75,10 @@ export async function handleOtpInput(ctx: MyContext) {
   try {
     const authResult = await authenticateEmailOtp(email, otp, sid);
     const token = authResult.accessToken;
-    const expiresAt = authResult.expiresAt;
+    const expireAt = new Date(authResult.expireAt).getTime();
 
     // Store the entire auth result in the session
-    ctx.session.tokenData = { token, expiresAt };
+    ctx.session.tokenData = { token, expireAt };
     ctx.reply("Login successful!");
 
     const userProfile = await getUserProfile(token);
@@ -93,6 +93,7 @@ export async function handleOtpInput(ctx: MyContext) {
     if (kycStatus.length > 0 && kycStatus[0].status === "approved") {
       ctx.reply("Your KYC is approved. You can now use all features.");
     } else {
+      //TODO find out why escaping characters isn't working properly in template literals
       // Escape the URL for MarkdownV2 *before* putting it in the link
       // const kycUrl = "https://payout\\.copperx\\.io/app/kyc";
       // const escapedKycUrl = escapeMarkdownV2Url(kycUrl); // Escape the URL
