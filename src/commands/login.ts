@@ -16,6 +16,11 @@ import { handleApiError } from "../utils/errorHandler";
 //   return url.replace(/[()]/g, "\\$&");
 // }
 
+// Function to validate email format.
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 export async function handleLogin(ctx: MyContext) {
   ctx.reply("Please enter your Copperx email address:");
   ctx.session.step = "awaitingEmail"; // Use context session
@@ -30,11 +35,11 @@ export async function handleEmailInput(ctx: MyContext) {
 
   const messageText = ctx.message.text;
 
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(messageText)) {
+  if (!isValidEmail(messageText)) {
     return ctx.reply("Invalid email format. Please enter a valid email address.");
   }
 
-  const email = escapeInput(messageText);
+  const email = messageText;
 
   try {
     const otpRequestResult = await requestEmailOtp(email);
