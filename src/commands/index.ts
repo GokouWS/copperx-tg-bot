@@ -4,14 +4,14 @@ import * as balance from "./balance";
 import * as login from "./login";
 import * as send from "./send";
 import * as withdraw from "./withdraw";
-import { bot } from "../bot";
+import { bot, MyContext } from "../bot";
 
 export function setupCommands() {
   // Login command
   bot.command("login", login.handleLogin);
 
   // General message handler.  This needs to come *after* specific command handlers.
-  bot.on("text", (ctx) => {
+  bot.on("text", (ctx: MyContext) => {
     switch (ctx.session.step) {
       case "awaitingEmail":
         login.handleEmailInput(ctx);

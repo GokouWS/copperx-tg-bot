@@ -8,7 +8,7 @@ import {
   requestEmailOtp,
 } from "../api";
 import { escapeInput } from "../utils/helpers";
-import { handleAxiosError } from "../utils/errorHandler";
+import { handleApiError } from "../utils/errorHandler";
 
 export async function handleLogin(ctx: MyContext) {
   ctx.reply("Please enter your Copperx email address:");
@@ -31,12 +31,13 @@ export async function handleEmailInput(ctx: MyContext) {
   const email = escapeInput(messageText);
 
   try {
-    await requestEmailOtp(email);
+    const otpRequestResult = await requestEmailOtp(email);
     ctx.reply("An OTP has been sent to your email. Please enter the OTP:");
     ctx.session.email = email; // Store email for OTP verification
+    ctx.session.sid = otpRequestResult.sid;
     ctx.session.step = "awaitingOtp";
   } catch (emailError) {
-    handleAxiosError(ctx, emailError);
+    handleApiError(ctx, emailError);
     ctx.session.step = "idle"; // reset state
   }
 }
@@ -56,17 +57,18 @@ export async function handleOtpInput(ctx: MyContext) {
   }
 
   // Guard clause: Check if email is in the session
-  if (!ctx.session.email) {
+  if (!ctx.session.email || !ctx.session.sid) {
     ctx.reply("Your session seems to have expired. Please start again with /login.");
     ctx.session.step = "idle";
     return;
   }
 
   const email = ctx.session.email;
+  const sid = ctx.session.sid;
 
   try {
-    const authResult = await authenticateEmailOtp(email, otp);
-    const token = authResult.token;
+    const authResult = await authenticateEmailOtp(email, otp, sid);
+    const token = authResult.accessToken;
     const expiresAt = authResult.expiresAt;
 
     // Store the entire auth result in the session
@@ -86,7 +88,7 @@ export async function handleOtpInput(ctx: MyContext) {
     }
     ctx.session.step = "idle";
   } catch (error) {
-    handleAxiosError(ctx, error);
+    handleApiError(ctx, error);
     ctx.session.step = "idle";
   }
 }

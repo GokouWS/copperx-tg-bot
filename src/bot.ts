@@ -13,6 +13,7 @@ if (!process.env.TELEGRAM_BOT_TOKEN) {
 interface SessionData {
   step: "idle" | "awaitingEmail" | "awaitingOtp"; //Add additional steps as needed.
   email?: string; //Store email
+  sid?: string;
   tokenData?: {
     token: string;
     expiresAt: number; //store the entire token data.

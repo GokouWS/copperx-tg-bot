@@ -1,6 +1,7 @@
 // Copperx API interaction
 import axios from "axios";
 import dotenv from "dotenv";
+import { createApiError } from "../utils/errorHandler";
 
 dotenv.config();
 
@@ -11,24 +12,21 @@ export async function requestEmailOtp(email: string) {
   try {
     const response = await axios.post(`${baseURL}/auth/email-otp/request`, { email });
     return response.data;
-  } catch (error: any) {
-    throw new Error(
-      `API Error (requestEmailOtp): ${error.response?.data?.message || error.message}`,
-    );
+  } catch (error) {
+    throw createApiError(error);
   }
 }
 
-export async function authenticateEmailOtp(email: string, otp: string) {
+export async function authenticateEmailOtp(email: string, otp: string, sid: string) {
   try {
     const response = await axios.post(`${baseURL}/auth/email-otp/authenticate`, {
       email,
       otp,
+      sid,
     });
     return response.data; //This now returns the entire data
-  } catch (error: any) {
-    throw new Error(
-      `API Error (authenticateEmailOtp): ${error.response?.data?.message || error.message}`,
-    );
+  } catch (error) {
+    throw createApiError(error);
   }
 }
 
@@ -39,10 +37,8 @@ export async function getUserProfile(token: string) {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
-  } catch (error: any) {
-    throw new Error(
-      `API Error (getUserProfile): ${error.response?.data?.message || error.message}`,
-    );
+  } catch (error) {
+    throw createApiError(error);
   }
 }
 // --- KYC ---
@@ -54,9 +50,7 @@ export async function getKycStatus(token: string) {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
-  } catch (error: any) {
-    throw new Error(
-      `API Error (getKycStatus): ${error.response?.data?.message || error.message}`,
-    );
+  } catch (error) {
+    throw createApiError(error);
   }
 }
