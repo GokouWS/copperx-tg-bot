@@ -31,3 +31,32 @@ export async function authenticateEmailOtp(email: string, otp: string) {
     );
   }
 }
+
+export async function getUserProfile(token: string) {
+  //Used later
+  try {
+    const response = await axios.get(`${baseURL}/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(
+      `API Error (getUserProfile): ${error.response?.data?.message || error.message}`,
+    );
+  }
+}
+// --- KYC ---
+
+export async function getKycStatus(token: string) {
+  //Used later
+  try {
+    const response = await axios.get(`${baseURL}/kycs`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(
+      `API Error (getKycStatus): ${error.response?.data?.message || error.message}`,
+    );
+  }
+}
