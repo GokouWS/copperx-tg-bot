@@ -1,7 +1,12 @@
 // Login commands
 import { Context } from "telegraf";
 import { MyContext } from "../bot";
-import { requestEmailOtp } from "../api";
+import {
+  authenticateEmailOtp,
+  getKycStatus,
+  getUserProfile,
+  requestEmailOtp,
+} from "../api";
 import { escapeInput } from "../utils/helpers";
 import { handleAxiosError } from "../utils/errorHandler";
 
@@ -37,7 +42,51 @@ export async function handleEmailInput(ctx: MyContext) {
 }
 
 export async function handleOtpInput(ctx: MyContext) {
-  // Placeholder for OTP handling logic
-  ctx.reply("OTP received (placeholder).");
-  ctx.session.step = "idle";
+  // Guard clause: check if ctx.message is a TextMessage
+  if (!ctx.message || !("text" in ctx.message)) {
+    ctx.reply("Please enter the OTP as text.");
+    return;
+  }
+  const messageText = ctx.message.text;
+  const unsafeOtp = messageText;
+  const otp = escapeInput(unsafeOtp);
+
+  if (!/^\d{6}$/.test(otp)) {
+    return ctx.reply("Invalid OTP format, Please enter a 6 digit OTP");
+  }
+
+  // Guard clause: Check if email is in the session
+  if (!ctx.session.email) {
+    ctx.reply("Your session seems to have expired. Please start again with /login.");
+    ctx.session.step = "idle";
+    return;
+  }
+
+  const email = ctx.session.email;
+
+  try {
+    const authResult = await authenticateEmailOtp(email, otp);
+    const token = authResult.token;
+    const expiresAt = authResult.expiresAt;
+
+    // Store the entire auth result in the session
+    ctx.session.tokenData = { token, expiresAt };
+    ctx.reply("Login successful!");
+
+    const userProfile = await getUserProfile(token);
+    ctx.reply(`Welcome, ${userProfile.firstName} ${userProfile.lastName}!`);
+
+    const kycStatus = await getKycStatus(token);
+    if (kycStatus.length > 0 && kycStatus[0].status === "approved") {
+      ctx.reply("Your KYC is approved. You can now use all features.");
+    } else {
+      ctx.reply(
+        "Your KYC is not approved. Please complete your KYC on the Copperx platform.",
+      );
+    }
+    ctx.session.step = "idle";
+  } catch (error) {
+    handleAxiosError(ctx, error);
+    ctx.session.step = "idle";
+  }
 }
