@@ -2,6 +2,7 @@
 
 import { getDefaultWallet, getWalletBalances, setDefaultWallet } from "../api";
 import { MyContext } from "../bot";
+import { Balance, WalletsResponse } from "../types";
 import { handleApiError } from "../utils/errorHandler";
 import { escapeInput } from "../utils/helpers";
 
@@ -9,12 +10,40 @@ export async function handleBalance(ctx: MyContext) {
   const token = ctx.session.tokenData!.token; // Use non-null assertion
 
   try {
-    const balances = await getWalletBalances(token);
-    let message = "Your Balances:\n";
-    for (const balance of balances) {
-      message += `${balance.availableBalance} ${balance.symbol} on ${balance.network}\n`;
+    const wallets: WalletsResponse = await getWalletBalances(token);
+
+    // Organize balances by network using a Map
+    const balancesByNetwork = new Map<string, Balance[]>();
+    for (const wallet of wallets) {
+      for (const balance of wallet.balances) {
+        if (!balancesByNetwork.has(wallet.network)) {
+          balancesByNetwork.set(wallet.network, []);
+        }
+        balancesByNetwork.get(wallet.network)!.push(balance); // Use non-null assertion
+      }
     }
-    ctx.reply(message);
+
+    // Construct the message
+    let message = "Your Balances:\n\n";
+    if (balancesByNetwork.size === 0) {
+      message = "You have no Wallets";
+    } else {
+      for (const [network, balances] of balancesByNetwork) {
+        // Escape the network name!
+        message += `*${escapeInput(network)}*:\n`;
+        for (const balance of balances) {
+          // Convert balance to a number and format
+          const numericBalance = Number(balance.balance) / 10 ** balance.decimals;
+          const formattedBalance = numericBalance.toFixed(balance.decimals);
+
+          // Escape all relevant parts of the message!
+          message += `  \\- ${escapeInput(balance.symbol)}: ${escapeInput(formattedBalance)}\n\\(Address: \`${escapeInput(balance.address)}\`\\)\n\n`;
+        }
+        message += "\n";
+      }
+    }
+
+    ctx.reply(message, { parse_mode: "MarkdownV2" }); // Use Markdown for bold network names
   } catch (error) {
     handleApiError(ctx, error);
   }
@@ -46,12 +75,12 @@ export async function handleChangeDefaultWallet(ctx: MyContext) {
   const token = ctx.session.tokenData!.token;
 
   try {
-    const balances = await getWalletBalances(token); // Fetch the wallets to get possible IDs.
+    const wallets: WalletsResponse = await getWalletBalances(token); // Fetch the wallets to get possible IDs.
     let message =
       "Your Wallets. Please reply with the Wallet ID that you want to set as your default:\n";
 
-    for (const balance of balances) {
-      message += `${balance.walletId}:  ${balance.availableBalance} ${balance.symbol} on ${balance.network}\n`;
+    for (const wallet of wallets) {
+      message += `${wallet.walletId}: Network: ${wallet.network}\n`;
     }
     ctx.reply(message);
     ctx.session.step = "awaitingWalletId"; // Set session step
@@ -70,9 +99,8 @@ export async function handleWalletIdInput(ctx: MyContext) {
   const walletId = escapeInput(unsafeWalletId); // Basic escaping
 
   try {
-    const balances = await getWalletBalances(token);
-    // TODO look at return from api and add a type for it
-    if (!balances.some((balance: any) => balance.walletId === walletId)) {
+    const wallets: WalletsResponse = await getWalletBalances(token);
+    if (!wallets.some((wallet) => wallet.walletId === walletId)) {
       return ctx.reply("Invalid wallet ID.");
     }
   } catch (error) {
