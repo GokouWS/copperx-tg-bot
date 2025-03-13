@@ -41,6 +41,7 @@ export async function getUserProfile(token: string) {
     throw createApiError(error);
   }
 }
+
 // --- KYC ---
 
 export async function getKycStatus(token: string) {
@@ -53,4 +54,52 @@ export async function getKycStatus(token: string) {
   } catch (error) {
     throw createApiError(error);
   }
+}
+
+// --- Wallet ---
+
+export async function getWalletBalances(token: string) {
+  try {
+    const response = await axios.get(`${baseURL}/wallets/balances`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    throw createApiError(error);
+  }
+}
+
+export async function getDefaultWallet(token: string) {
+  try {
+    const response = await axios.get(`${baseURL}/wallets/default`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    throw createApiError(error);
+  }
+}
+
+export async function setDefaultWallet(token: string, walletId: string) {
+  try {
+    const response = await axios.post(
+      `${baseURL}/wallets/default`,
+      { walletId },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    throw createApiError(error);
+  }
+}
+
+// Token Expiration check
+export function isTokenExpired(tokenData: any): boolean {
+  if (!tokenData || !tokenData.expiresAt) {
+    return true; // Assume expired if no data
+  }
+  // Compare expiresAt (which should be a UNIX timestamp in milliseconds) with the current time.
+  return tokenData.expiresAt <= Date.now();
 }
