@@ -1,5 +1,7 @@
 // Utility functions
 
+import { MyContext } from "../bot";
+
 // Basic escaping function
 export function escapeInput(input: string): string {
   return input
@@ -26,4 +28,14 @@ export function formatCurrency(amount: number, currencyCode: string): string {
     style: "currency",
     currency: currencyCode,
   }).format(amount);
+}
+
+// Function to validate callback query
+export function validateCallbackQuery(ctx: MyContext): boolean {
+  if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
+    console.warn("Received unexpected callback query:", ctx.callbackQuery);
+    ctx.answerCbQuery("Invalid callback query.");
+    return false; // Indicate failure
+  }
+  return true; // Indicate success
 }
