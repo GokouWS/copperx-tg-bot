@@ -26,6 +26,7 @@ interface SessionData {
   recipientEmail?: string; //Store recipient email for send to email
   amount?: number | string; // Can be string or number
   currency?: string;
+  recipientWalletAddress?: string;
   pendingTransaction?: // Add pendingTransaction to session
   | {
         type: "sendemail";

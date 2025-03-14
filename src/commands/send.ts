@@ -150,12 +150,39 @@ export async function handleSendWallet(ctx: MyContext) {
 
 // --- Input handlers for Send to Wallet ---
 export async function handleWalletAddressInput(ctx: MyContext) {
-  ctx.reply("Placeholder for wallet address input.");
-  ctx.session.step = "idle";
+  const messageText = getMessageText(ctx);
+  if (!messageText) {
+    ctx.reply("Please enter a wallet address");
+    return;
+  }
+
+  const walletAddress = messageText;
+
+  // Basic validation (could add network-specific validation)
+  if (!/^[a-zA-Z0-9]+$/.test(walletAddress)) {
+    return ctx.reply("Invalid wallet address format.");
+  }
+
+  ctx.session.recipientWalletAddress = messageText;
+  ctx.reply("Enter the amount:");
+  ctx.session.step = "awaitingWalletAmount";
 }
 export async function handleWalletAmountInput(ctx: MyContext) {
-  ctx.reply("Placeholder for wallet amount input.");
-  ctx.session.step = "idle";
+  const messageText = getMessageText(ctx);
+  if (!messageText) {
+    ctx.reply("Please enter an amount");
+    return;
+  }
+
+  const amount = messageText;
+
+  if (isNaN(Number(amount)) || Number(amount) <= 0) {
+    // Check by converting
+    return ctx.reply("Invalid amount. Please enter a positive number.");
+  }
+  ctx.session.amount = amount;
+  ctx.reply("Enter the currency (e.g., USDC):");
+  ctx.session.step = "awaitingWalletCurrency";
 }
 export async function handleWalletCurrencyInput(ctx: MyContext) {
   ctx.reply("Placeholder for wallet currency input.");
