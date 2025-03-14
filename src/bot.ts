@@ -11,7 +11,7 @@ if (!process.env.TELEGRAM_BOT_TOKEN) {
 
 //Extend the telegraf context
 interface SessionData {
-  step: "idle" | "awaitingEmail" | "awaitingOtp" | "awaitingWalletId"; //Add additional steps as needed.
+  step: "idle" | "awaitingEmail" | "awaitingOtp" | "awaitingWalletChoice"; //Add additional steps as needed.
   email?: string; //Store email
   sid?: string;
   tokenData?: {

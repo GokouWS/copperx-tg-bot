@@ -1,5 +1,6 @@
 // Balance commands
 
+import { Markup } from "telegraf";
 import { getDefaultWallet, getWalletBalances, setDefaultWallet } from "../api";
 import { MyContext } from "../bot";
 import { Balance, WalletsResponse } from "../types";
@@ -77,46 +78,43 @@ export async function handleChangeDefaultWallet(ctx: MyContext) {
   const token = ctx.session.tokenData!.token;
 
   try {
-    const wallets: WalletsResponse = await getWalletBalances(token); // Fetch the wallets to get possible IDs.
-    let message =
-      "Your Wallets\\:\nPlease reply with the Wallet ID that you want to set as your default:\n\n";
+    const wallets: WalletsResponse = await getWalletBalances(token);
+    const buttons = wallets.map((wallet) =>
+      Markup.button.callback(wallet.walletId, `set_default:${wallet.walletId}`),
+    );
+    const keyboard = Markup.inlineKeyboard(buttons, { columns: 1 }); // Arrange buttons in 1 column
 
-    for (const wallet of wallets) {
-      message += `*${escapeInput(wallet.network)}*:\n`;
-      message += `Network: ${wallet.network}\n`;
-      message += `Wallet ID: \`${wallet.walletId}\`\n\n`;
-    }
-    ctx.reply(message, { parse_mode: "MarkdownV2" });
-    ctx.session.step = "awaitingWalletId"; // Set session step
+    ctx.reply("Tap a Wallet ID to set it as your default:", keyboard);
+    ctx.session.step = "awaitingWalletChoice"; // Use a more descriptive step name
   } catch (error) {
     handleApiError(ctx, error);
   }
 }
-export async function handleWalletIdInput(ctx: MyContext) {
+export async function handleWalletChoice(ctx: MyContext) {
   const token = ctx.session.tokenData!.token;
 
-  if (!ctx.message || !("text" in ctx.message)) {
-    ctx.reply("Please enter the wallet ID as text");
-    return;
+  // Guard clause: Check if it's a CallbackQuery with data
+  if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
+    console.warn("Received unexpected callback query:", ctx.callbackQuery);
+    ctx.answerCbQuery("Invalid callback query.");
+    return; // Exit early
   }
-  const unsafeWalletId = ctx.message.text;
-  const walletId = escapeInput(unsafeWalletId); // Basic escaping
 
-  try {
-    const wallets: WalletsResponse = await getWalletBalances(token);
-    if (!wallets.some((wallet) => wallet.walletId === walletId)) {
-      return ctx.reply("Invalid wallet ID.");
+  const callbackData = ctx.callbackQuery.data; // e.g., "set_default:wallet-id-123"
+
+  if (callbackData.startsWith("set_default:")) {
+    const walletId = callbackData.split(":")[1]; // Extract the wallet ID
+
+    try {
+      await setDefaultWallet(token, walletId);
+      // Acknowledge the button press *and* update the message
+      ctx.answerCbQuery(`Default wallet set to ${walletId}`); // Show popup
+      ctx.editMessageText(`Default wallet set to ${walletId}`); // Remove buttons
+    } catch (error) {
+      handleApiError(ctx, error);
+      ctx.answerCbQuery("An error occurred."); // Show error in popup
+    } finally {
+      ctx.session.step = "idle";
     }
-  } catch (error) {
-    return ctx.reply("An error occurred while validating wallet id.");
-  }
-
-  try {
-    await setDefaultWallet(token, walletId); // Set default wallet.
-    ctx.reply(`Default wallet set to ${walletId}`);
-  } catch (error) {
-    handleApiError(ctx, error);
-  } finally {
-    ctx.session.step = "idle"; // Reset state
   }
 }

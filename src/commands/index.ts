@@ -22,6 +22,7 @@ export function setupCommands() {
     checkTokenExpiration,
     balance.handleChangeDefaultWallet,
   );
+  bot.action(/^set_default:.+$/, checkTokenExpiration, balance.handleWalletChoice);
 
   // General message handler.  This needs to come *after* specific command handlers.
   bot.on("text", (ctx: MyContext) => {
