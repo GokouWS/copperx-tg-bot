@@ -2,6 +2,11 @@
 
 import { MyContext } from "../bot";
 
+// Function to validate email format.
+export function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 // Basic escaping function
 export function escapeInput(input: string): string {
   return input
