@@ -95,6 +95,73 @@ export async function setDefaultWallet(token: string, walletId: string) {
   }
 }
 
+// --- Transfers ---
+
+export async function sendToEmail(
+  token: string,
+  email: string,
+  amount: number,
+  currency: string,
+  network: string,
+  message?: string,
+) {
+  try {
+    const response = await axios.post(
+      `${baseURL}/transfers/send`,
+      {
+        email,
+        amount,
+        currency,
+        network,
+        message, // Optional message
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    throw createApiError(error);
+  }
+}
+
+export async function sendToWallet(
+  token: string,
+  walletAddress: string,
+  amount: number,
+  currency: string,
+  network: string,
+) {
+  try {
+    const response = await axios.post(
+      `${baseURL}/transfers/wallet-withdraw`,
+      {
+        walletAddress,
+        amount,
+        currency,
+        network,
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    throw createApiError(error);
+  }
+}
+
+export async function getLast10Transactions(token: string) {
+  try {
+    const response = await axios.get(`${baseURL}/transfers?page=1&limit=10`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    throw createApiError(error);
+  }
+}
+
 // Token Expiration check
 export function isTokenExpired(tokenData: any): boolean {
   if (!tokenData || !tokenData.expireAt) {
