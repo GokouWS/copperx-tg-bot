@@ -100,10 +100,9 @@ export async function setDefaultWallet(token: string, walletId: string) {
 export async function sendToEmail(
   token: string,
   email: string,
-  amount: number,
+  amount: string,
   currency: string,
-  network: string,
-  message?: string,
+  purposeCode: string,
 ) {
   try {
     const response = await axios.post(
@@ -112,8 +111,7 @@ export async function sendToEmail(
         email,
         amount,
         currency,
-        network,
-        message, // Optional message
+        purposeCode,
       },
       {
         headers: { Authorization: `Bearer ${token}` },
@@ -128,9 +126,9 @@ export async function sendToEmail(
 export async function sendToWallet(
   token: string,
   walletAddress: string,
-  amount: number,
+  amount: string,
   currency: string,
-  network: string,
+  purposeCode: string,
 ) {
   try {
     const response = await axios.post(
@@ -139,7 +137,7 @@ export async function sendToWallet(
         walletAddress,
         amount,
         currency,
-        network,
+        purposeCode,
       },
       {
         headers: { Authorization: `Bearer ${token}` },
