@@ -24,9 +24,10 @@ interface SessionData {
     | "awaitingWalletCurrency"; //Add additional steps as needed.
   email?: string; //Store logged in email
   recipientEmail?: string; //Store recipient email for send to email
-  amount?: number | string; // Can be string or number
+  amount?: string; // Can be string or number
   currency?: string;
   recipientWalletAddress?: string;
+  walletAmount?: string;
   pendingTransaction?: // Add pendingTransaction to session
   | {
         type: "sendemail";

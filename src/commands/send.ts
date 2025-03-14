@@ -124,7 +124,7 @@ export async function handleCurrencyInput(ctx: MyContext) {
 Confirm Transaction:
 Type: Send to Email
 Recipient: ${escapeInput(email)}
-Amount: ${escapeInput(String(originalAmount))} ${escapeInput(currencyStr)}
+Amount: ${escapeInput(originalAmount)} ${escapeInput(currencyStr)}
 `; // Show original amount to the user
 
     ctx.reply(
@@ -180,13 +180,88 @@ export async function handleWalletAmountInput(ctx: MyContext) {
     // Check by converting
     return ctx.reply("Invalid amount. Please enter a positive number.");
   }
-  ctx.session.amount = amount;
+  ctx.session.walletAmount = amount;
   ctx.reply("Enter the currency (e.g., USDC):");
   ctx.session.step = "awaitingWalletCurrency";
 }
 export async function handleWalletCurrencyInput(ctx: MyContext) {
-  ctx.reply("Placeholder for wallet currency input.");
-  ctx.session.step = "idle";
+  // Guard clause: Check if ctx.message is a TextMessage
+  const messageText = getMessageText(ctx);
+  if (!messageText) {
+    ctx.reply("Please enter a currency");
+    return;
+  }
+
+  const unsafeCurrency = messageText;
+  const currency = escapeInput(unsafeCurrency).toUpperCase();
+
+  if (currency != "USD") {
+    return ctx.reply("Invalid currency. Only USD is accepted at the moment");
+  }
+
+  // --- Confirmation Step (send_email) ---
+  const token = ctx.session.tokenData!.token;
+  const walletAddress = ctx.session.recipientWalletAddress!;
+  const originalAmount = ctx.session.walletAmount!; // Original, unscaled amount (for display only)
+  const currencyStr = currency;
+  const purposeCode = "self";
+
+  // --- Get the correct decimals value ---
+  try {
+    const wallets: WalletsResponse = await getWalletBalances(token);
+    let decimals = 0; // Default value
+    let found = false;
+    for (const wallet of wallets) {
+      for (const balance of wallet.balances) {
+        //Use toUpperCase for comparison.
+        if (balance.symbol.toUpperCase() === currencyStr.toUpperCase()) {
+          decimals = balance.decimals;
+          found = true;
+          break; // Exit inner loop
+        }
+      }
+      if (found) break; //Exit outer loop.
+    }
+
+    if (!found) {
+      return ctx.reply("You don't have a balance in the selected currency.");
+    }
+
+    // --- Convert amount to correct format ---
+    const numericAmount = Number(originalAmount); // Convert to number for calculation
+    const scaledAmount = String(Math.round(numericAmount * 10 ** decimals)); // Multiply, round, and convert back to string
+
+    // *** Store the SCALED amount in the session ***
+    ctx.session.walletAmount = scaledAmount;
+
+    ctx.session.pendingTransaction = {
+      type: "sendwallet",
+      token,
+      walletAddress,
+      amount: scaledAmount, // Use the scaled amount here
+      currency: currencyStr,
+      purposeCode,
+    };
+
+    const confirmationMessage = `
+Confirm Transaction:
+Type: Send to Wallet
+Recipient: ${escapeInput(walletAddress)}
+Amount: ${escapeInput(originalAmount)} ${escapeInput(currencyStr)}
+`; // Show original amount to the user
+
+    ctx.reply(
+      confirmationMessage,
+      Markup.inlineKeyboard([
+        Markup.button.callback("Confirm", "confirm_transaction"),
+        Markup.button.callback("Cancel", "cancel_transaction"),
+      ]),
+    );
+    ctx.session.step = "idle";
+  } catch (error) {
+    handleApiError(ctx, error);
+    ctx.session.step = "idle";
+  }
 }
 
 export async function handleLast10Transactions(ctx: MyContext) {
