@@ -266,5 +266,22 @@ Amount: ${escapeInput(originalAmount)} ${escapeInput(currencyStr)}
 
 export async function handleLast10Transactions(ctx: MyContext) {
   const token = ctx.session.tokenData!.token;
-  ctx.reply("Last 10 transactions (placeholder).");
+  try {
+    const transactions = await getLast10Transactions(token);
+    console.log("Last 10 Transactions:", transactions);
+    if (transactions.count === 0) {
+      return ctx.reply("You don't have any transactions yet.");
+    }
+    let message = "Your Last 10 Transactions:\n\n";
+    for (const transaction of transactions.data) {
+      const direction = transaction.direction;
+      const status = transaction.status;
+      const amount = transaction.amount;
+      const currency = transaction.currency;
+      message += `${escapeInput(direction)}: ${escapeInput(String(amount))} ${escapeInput(currency)} \\- ${escapeInput(status)}\n`; // Escape for MarkdownV2
+    }
+    ctx.reply(message, { parse_mode: "MarkdownV2" });
+  } catch (error) {
+    handleApiError(ctx, error);
+  }
 }
