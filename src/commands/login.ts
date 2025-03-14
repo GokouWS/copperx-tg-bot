@@ -7,7 +7,7 @@ import {
   getUserProfile,
   requestEmailOtp,
 } from "../api";
-import { escapeInput } from "../utils/helpers";
+import { escapeInput, getMessageText, isValidEmail } from "../utils/helpers";
 import { handleApiError } from "../utils/errorHandler";
 
 // // Function to escape MarkdownV2 reserved characters *specifically within a URL*
@@ -16,11 +16,6 @@ import { handleApiError } from "../utils/errorHandler";
 //   return url.replace(/[()]/g, "\\$&");
 // }
 
-// Function to validate email format.
-function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
 export async function handleLogin(ctx: MyContext) {
   ctx.reply("Please enter your Copperx email address:");
   ctx.session.step = "awaitingEmail"; // Use context session
@@ -28,12 +23,11 @@ export async function handleLogin(ctx: MyContext) {
 
 export async function handleEmailInput(ctx: MyContext) {
   // Guard clause: Check if ctx.message is a TextMessage
-  if (!ctx.message || !("text" in ctx.message)) {
+  const messageText = getMessageText(ctx);
+  if (!messageText) {
     ctx.reply("Please enter your email as text.");
-    return; // Exit early
+    return;
   }
-
-  const messageText = ctx.message.text;
 
   if (!isValidEmail(messageText)) {
     return ctx.reply("Invalid email format. Please enter a valid email address.");
@@ -55,11 +49,11 @@ export async function handleEmailInput(ctx: MyContext) {
 
 export async function handleOtpInput(ctx: MyContext) {
   // Guard clause: check if ctx.message is a TextMessage
-  if (!ctx.message || !("text" in ctx.message)) {
+  const messageText = getMessageText(ctx); // Use the helper!
+  if (!messageText) {
     ctx.reply("Please enter the OTP as text.");
     return;
   }
-  const messageText = ctx.message.text;
   const unsafeOtp = messageText;
   const otp = escapeInput(unsafeOtp);
 
