@@ -7,6 +7,14 @@ export function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+// Helper function to safely get message text
+export function getMessageText(ctx: MyContext): string | null {
+  if (ctx.message && "text" in ctx.message) {
+    return ctx.message.text;
+  }
+  return null; // Return null if not a text message
+}
+
 // Basic escaping function
 export function escapeInput(input: string): string {
   return input
