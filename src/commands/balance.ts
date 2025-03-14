@@ -5,7 +5,11 @@ import { getDefaultWallet, getWalletBalances, setDefaultWallet } from "../api";
 import { MyContext } from "../bot";
 import { Balance, WalletsResponse } from "../types";
 import { handleApiError } from "../utils/errorHandler";
-import { escapeInput } from "../utils/helpers";
+import {
+  escapeInput,
+  getCallbackQueryData,
+  validateCallbackQuery,
+} from "../utils/helpers";
 
 export async function handleBalance(ctx: MyContext) {
   const token = ctx.session.tokenData!.token; // Use non-null assertion
@@ -93,14 +97,10 @@ export async function handleChangeDefaultWallet(ctx: MyContext) {
 export async function handleWalletChoice(ctx: MyContext) {
   const token = ctx.session.tokenData!.token;
 
-  // Guard clause: Check if it's a CallbackQuery with data
-  if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
-    console.warn("Received unexpected callback query:", ctx.callbackQuery);
-    ctx.answerCbQuery("Invalid callback query.");
-    return; // Exit early
+  const callbackData = getCallbackQueryData(ctx); // e.g., "set_default:wallet-id-123"
+  if (!callbackData) {
+    return; // Exit early if validation failed
   }
-
-  const callbackData = ctx.callbackQuery.data; // e.g., "set_default:wallet-id-123"
 
   if (callbackData.startsWith("set_default:")) {
     const walletId = callbackData.split(":")[1]; // Extract the wallet ID

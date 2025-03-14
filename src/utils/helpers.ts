@@ -32,10 +32,19 @@ export function formatCurrency(amount: number, currencyCode: string): string {
 
 // Function to validate callback query
 export function validateCallbackQuery(ctx: MyContext): boolean {
-  if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
+  if (!ctx.callbackQuery || !("data" in ctx.callbackQuery!)) {
     console.warn("Received unexpected callback query:", ctx.callbackQuery);
     ctx.answerCbQuery("Invalid callback query.");
     return false; // Indicate failure
   }
   return true; // Indicate success
+}
+
+export function getCallbackQueryData(ctx: MyContext): string | null {
+  if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
+    console.warn("Received unexpected callback query:", ctx.callbackQuery);
+    ctx.answerCbQuery("Invalid callback query.");
+    return null; // Return null on failure
+  }
+  return ctx.callbackQuery.data; // Return the data
 }
