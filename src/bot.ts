@@ -17,13 +17,36 @@ interface SessionData {
     | "awaitingOtp"
     | "awaitingWalletChoice"
     | "awaitingRecipientEmail"
-    | "awaitingWalletAddress"; //Add additional steps as needed.
+    | "awaitingWalletAddress"
+    | "awaitingAmount"
+    | "awaitingCurrency"
+    | "awaitingWalletAmount"
+    | "awaitingWalletCurrency"; //Add additional steps as needed.
   email?: string; //Store email
-  sid?: string;
+  pendingTransaction?: // Add pendingTransaction to session
+  | {
+        type: "sendemail";
+        token: string;
+        email: string;
+        amount: string;
+        currency: string;
+        purposeCode: string;
+      }
+    | {
+        type: "sendwallet";
+        token: string;
+        walletAddress: string;
+        amount: string;
+        currency: string;
+        purposeCode: string;
+      }
+    | { type: "withdraw" /* ... withdraw fields ... */ }
+    | null;
   tokenData?: {
     token: string;
     expireAt: number; //store the entire token data.
   };
+  sid?: string;
 }
 export interface MyContext extends Context {
   session: SessionData;
