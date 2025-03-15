@@ -160,6 +160,31 @@ export async function getLast10Transactions(token: string) {
   }
 }
 
+// --- Withdraw ---
+export async function withdrawToBank(
+  token: string,
+  bankAccountId: string,
+  amount: string,
+  currency: string,
+) {
+  try {
+    const response = await axios.post(
+      `${baseURL}/transfers/offramp`,
+      {
+        bankAccountId,
+        amount,
+        currency,
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    return response.data;
+  } catch (error: any) {
+    throw createApiError(error);
+  }
+}
+
 // Token Expiration check
 export function isTokenExpired(tokenData: any): boolean {
   if (!tokenData || !tokenData.expireAt) {
