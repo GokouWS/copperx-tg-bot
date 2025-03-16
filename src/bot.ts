@@ -21,7 +21,11 @@ interface SessionData {
     | "awaitingAmount"
     | "awaitingCurrency"
     | "awaitingWalletAmount"
-    | "awaitingWalletCurrency"; //Add additional steps as needed.
+    | "awaitingWalletCurrency"
+    | "awaitingBankAccountId"
+    | "awaitingWithdrawalAmount"
+    | "awaitingWithdrawalCurrency"
+    | "awaitingWithdrawalPurposeCode"; //Add additional steps as needed.
   email?: string; //Store logged in email
   recipientEmail?: string; //Store recipient email for send to email
   amount?: string; // Can be string or number
