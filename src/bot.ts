@@ -1,6 +1,7 @@
 // Bot setup and initialization
 import { Telegraf, Context, session } from "telegraf";
 import dotenv from "dotenv";
+import { setupDepositNotifications } from "./events/deposit";
 
 dotenv.config();
 
@@ -8,6 +9,11 @@ if (!process.env.TELEGRAM_BOT_TOKEN) {
   console.error("TELEGRAM_BOT_TOKEN is not defined in .env");
   process.exit(1);
 }
+
+// --- In-Memory Storage (for single user, no persistence) ---
+let currentOrganizationId: string | null = null;
+let currentChatId: number | null = null;
+let cleanupPusher: (() => void) | null = null;
 
 //Extend the telegraf context
 interface SessionData {
@@ -59,6 +65,11 @@ interface SessionData {
 }
 export interface MyContext extends Context {
   session: SessionData;
+  tokenData?: {
+    // Add tokenData to MyContext, make it optional
+    token: string;
+    expiresAt: number;
+  };
 }
 
 const bot = new Telegraf<MyContext>(process.env.TELEGRAM_BOT_TOKEN);
@@ -72,6 +83,37 @@ bot.use(async (ctx, next) => {
   }
   await next();
 });
+
+// Function to initialize the Pusher connection (called after login)
+export async function initializeUserSession(
+  chatId: number,
+  token: string,
+  organizationId: string,
+) {
+  // Cleanup any existing Pusher connection
+  if (cleanupPusher) {
+    cleanupPusher();
+    cleanupPusher = null; // Clear the old cleanup function
+  }
+
+  // Store the current session information
+  currentOrganizationId = organizationId;
+  currentChatId = chatId;
+
+  // Set up the Pusher connection
+  cleanupPusher =
+    (await setupDepositNotifications(token, organizationId, chatId)) ?? null;
+}
+
+// Function to clear the session (for logout or restart)
+export function clearUserSession() {
+  if (cleanupPusher) {
+    cleanupPusher();
+  }
+  currentOrganizationId = null;
+  currentChatId = null;
+  cleanupPusher = null;
+}
 
 // /start command
 bot.start((ctx: Context) => {
