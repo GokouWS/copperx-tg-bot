@@ -1,6 +1,6 @@
 // Login commands
 import { Context } from "telegraf";
-import { MyContext } from "../bot";
+import { initializeUserSession, MyContext } from "../bot";
 import {
   authenticateEmailOtp,
   getKycStatus,
@@ -76,11 +76,27 @@ export async function handleOtpInput(ctx: MyContext) {
     const token = authResult.accessToken;
     const expireAt = new Date(authResult.expireAt).getTime();
 
+    // --- Get User Profile ---
+    const userProfile = await getUserProfile(token);
+    const organizationId = userProfile.organizationId;
+
+    console.log("Organization ID from login:", organizationId);
+
+    if (!organizationId) {
+      return ctx.reply("Could not retrieve organization ID. Please contact support.");
+    }
+
+    // --- Initialize User Session (Pusher) ---
+    const chatId = ctx.chat?.id;
+    if (chatId === undefined) {
+      throw new Error("Chat ID is undefined");
+    }
+    initializeUserSession(chatId, token, organizationId);
+
     // Store the entire auth result in the session
-    ctx.session.tokenData = { token, expireAt };
+    ctx.session.tokenData = { token, expireAt }; // Store for use in middleware
     ctx.reply("Login successful!");
 
-    const userProfile = await getUserProfile(token);
     // console.log(userProfile);
     if (!userProfile.firstName) {
       ctx.reply(`Welcome, you are now logged in as ${userProfile.email}!`);
