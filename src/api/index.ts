@@ -185,6 +185,29 @@ export async function withdrawToBank(
   }
 }
 
+// --- Pusher ---
+export async function authenticatePusher(
+  token: string,
+  socketId: string,
+  channelName: string,
+) {
+  try {
+    const response = await axios.post(
+      `${baseURL}/notifications/auth`,
+      {
+        socket_id: socketId,
+        channel_name: channelName,
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    throw createApiError(error);
+  }
+}
+
 // Token Expiration check
 export function isTokenExpired(tokenData: any): boolean {
   if (!tokenData || !tokenData.expireAt) {
