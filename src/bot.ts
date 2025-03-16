@@ -2,6 +2,8 @@
 import { Telegraf, Context, session } from "telegraf";
 import dotenv from "dotenv";
 import { setupDepositNotifications } from "./events/deposit";
+import Redis from "ioredis";
+import RedisSession from "telegraf-session-redis";
 
 dotenv.config();
 
@@ -10,10 +12,27 @@ if (!process.env.TELEGRAM_BOT_TOKEN) {
   process.exit(1);
 }
 
+// --- Redis Session Setup ---
+const redisClient = new Redis(process.env.REDIS_URL!); // Use ioredis.  Make sure REDIS_URL is set!
+const redisSession = new RedisSession({
+  store: {
+    host: process.env.REDIS_URL!, //Connection string
+    port: process.env.REDIS_PORT!, //Port
+    // You can add other Redis options here if needed (e.g., password)
+  },
+  getSessionKey: (ctx) => {
+    // Use both chat ID and user ID to create a unique session key.
+    // This handles cases where a user might use the bot in a group and privately.
+    return ctx.from && ctx.chat
+      ? `<span class="math-inline">\{ctx\.from\.id\}\:</span>{ctx.chat.id}`
+      : undefined;
+  },
+});
+
 // --- In-Memory Storage (for single user, no persistence) ---
 let currentOrganizationId: string | null = null;
 let currentChatId: number | null = null;
-let cleanupPusher: (() => void) | null = null;
+// let cleanupPusher: (() => void) | null = null;
 
 //Extend the telegraf context
 interface SessionData {
@@ -74,8 +93,12 @@ export interface MyContext extends Context {
 
 const bot = new Telegraf<MyContext>(process.env.TELEGRAM_BOT_TOKEN);
 
-// In-memory session (replace with Redis later)
-bot.use(session());
+// // In-memory session (replace with Redis later)
+// bot.use(session());
+
+// Use Redis for session storage
+bot.use(redisSession.middleware());
+
 // Initialize session middleware and set default
 bot.use(async (ctx, next) => {
   if (!ctx.session) {
@@ -84,35 +107,25 @@ bot.use(async (ctx, next) => {
   await next();
 });
 
-// Function to initialize the Pusher connection (called after login)
+//Keep track of cleanup tasks
+const cleanupTasks = new Map<number, () => void>();
+
+// Function to store cleanup tasks
 export async function initializeUserSession(
   chatId: number,
   token: string,
   organizationId: string,
 ) {
-  // Cleanup any existing Pusher connection
-  if (cleanupPusher) {
-    cleanupPusher();
-    cleanupPusher = null; // Clear the old cleanup function
+  // Check for existing cleanup tasks and execute them
+  if (cleanupTasks.has(chatId)) {
+    const cleanup = cleanupTasks.get(chatId);
+    if (cleanup) {
+      cleanup(); // cleanup any existing subscriptions
+    }
   }
-
-  // Store the current session information
-  currentOrganizationId = organizationId;
-  currentChatId = chatId;
-
-  // Set up the Pusher connection
-  cleanupPusher =
-    (await setupDepositNotifications(token, organizationId, chatId)) ?? null;
-}
-
-// Function to clear the session (for logout or restart)
-export function clearUserSession() {
-  if (cleanupPusher) {
-    cleanupPusher();
-  }
-  currentOrganizationId = null;
-  currentChatId = null;
-  cleanupPusher = null;
+  //Set up new pusher subscription.
+  const cleanupPusher = await setupDepositNotifications(token, organizationId, chatId);
+  !!cleanupPusher && cleanupTasks.set(chatId, cleanupPusher); // Store cleanup function.
 }
 
 // /start command
@@ -140,7 +153,19 @@ Available Commands:
 });
 
 // Graceful shutdown
-process.once("SIGINT", () => bot.stop("SIGINT"));
-process.once("SIGTERM", () => bot.stop("SIGTERM"));
+process.once("SIGINT", () => {
+  for (const cleanup of cleanupTasks.values()) {
+    cleanup(); // Execute all cleanup functions.
+  }
+  bot.stop("SIGINT");
+  redisClient.quit(); // Quit the Redis connection *AFTER* stopping the bot
+});
+process.once("SIGTERM", () => {
+  for (const cleanup of cleanupTasks.values()) {
+    cleanup(); // Execute all cleanup functions.
+  }
+  bot.stop("SIGTERM");
+  redisClient.quit(); // Quit the Redis connection *AFTER* stopping the bot
+});
 
 export { bot };
