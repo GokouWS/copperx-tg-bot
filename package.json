@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node dist/index.js",
     "build": "tsc",
-    "dev": "nodemon src/index.ts",
+    "dev": "ts-node-dev --respawn src/index.ts",
     "deploy": "pnpm run build && pnpm start"
   },
   "keywords": [],
@@ -28,6 +28,7 @@
     "nodemon": "^3.1.9",
     "prettier": "^3.5.3",
     "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.2"
   }
 }
