@@ -120,6 +120,28 @@ export function setupCommands() {
     await ctx.reply(`Available Commands: ...`); // Your help message
   });
 
+  // --- Action Handlers for commands buttons ---
+  bot.action("balance_button", checkTokenExpiration, async (ctx: MyContext) => {
+    await ctx.answerCbQuery();
+    await balance.handleBalance(ctx);
+  });
+  bot.action("send_button", checkTokenExpiration, async (ctx: MyContext) => {
+    await ctx.answerCbQuery();
+    await send.handleSend(ctx);
+  });
+  bot.action("withdraw_button", checkTokenExpiration, async (ctx: MyContext) => {
+    await ctx.answerCbQuery();
+    await send.handleSend(ctx);
+  });
+  bot.action("default_wallet_button", checkTokenExpiration, async (ctx: MyContext) => {
+    await ctx.answerCbQuery();
+    await balance.handleDefaultWallet(ctx);
+  });
+  bot.action("logout_button", async (ctx: MyContext) => {
+    await ctx.answerCbQuery();
+    await logout.handleLogout(ctx); // Use the imported function here too
+  });
+
   // General message handler.  This needs to come *after* specific command handlers.
   bot.on("text", async (ctx: MyContext) => {
     switch (ctx.session.step) {
