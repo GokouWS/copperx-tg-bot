@@ -36,10 +36,9 @@ export async function handleEmailInput(ctx: MyContext) {
   const email = messageText;
 
   try {
-    const otpRequestResult = await requestEmailOtp(email);
+    await requestEmailOtp(email);
     ctx.reply("An OTP has been sent to your email. Please enter the OTP:");
     ctx.session.email = email; // Store email for OTP verification
-    ctx.session.sid = otpRequestResult.sid;
     ctx.session.step = "awaitingOtp";
   } catch (emailError) {
     handleApiError(ctx, emailError);
@@ -62,17 +61,16 @@ export async function handleOtpInput(ctx: MyContext) {
   }
 
   // Guard clause: Check if email is in the session
-  if (!ctx.session.email || !ctx.session.sid) {
+  if (!ctx.session.email) {
     ctx.reply("Your session seems to have expired. Please start again with /login.");
     ctx.session.step = "idle";
     return;
   }
 
   const email = ctx.session.email;
-  const sid = ctx.session.sid;
 
   try {
-    const authResult = await authenticateEmailOtp(email, otp, sid);
+    const authResult = await authenticateEmailOtp(email, otp);
     const token = authResult.accessToken;
     const expireAt = new Date(authResult.expireAt).getTime();
 

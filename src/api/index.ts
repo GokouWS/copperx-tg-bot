@@ -17,12 +17,11 @@ export async function requestEmailOtp(email: string) {
   }
 }
 
-export async function authenticateEmailOtp(email: string, otp: string, sid: string) {
+export async function authenticateEmailOtp(email: string, otp: string) {
   try {
     const response = await axios.post(`${baseURL}/auth/email-otp/authenticate`, {
       email,
       otp,
-      sid,
     });
     return response.data; //This now returns the entire data
   } catch (error) {
@@ -191,7 +190,9 @@ export async function authenticatePusher(
   socketId: string,
   channelName: string,
 ) {
+  console.log("Authenticating Pusher...");
   try {
+    console.log("Sending Pusher auth request...");
     const response = await axios.post(
       `${baseURL}/notifications/auth`,
       {

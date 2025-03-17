@@ -1,6 +1,6 @@
 // Main bot entry point
 import { getUserProfile, isTokenExpired } from "./api";
-import { bot, clearUserSession, initializeUserSession } from "./bot";
+import { bot, initializeUserSession } from "./bot";
 import { setupCommands } from "./commands";
 
 // Setup commands
@@ -37,14 +37,4 @@ bot.command("start", async (ctx) => {
   } else {
     ctx.reply("Welcome to the Copperx bot, /login to begin.");
   }
-});
-
-// Enable graceful stop
-process.once("SIGINT", () => {
-  clearUserSession();
-  bot.stop("SIGINT");
-});
-process.once("SIGTERM", () => {
-  clearUserSession();
-  bot.stop("SIGTERM");
 });

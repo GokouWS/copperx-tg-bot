@@ -1,8 +1,8 @@
 // Bot setup and initialization
-import { Telegraf, Context, session } from "telegraf";
+import { Telegraf, Context } from "telegraf";
 import dotenv from "dotenv";
 import { setupDepositNotifications } from "./events/deposit";
-import Redis from "ioredis";
+import Redis, { RedisOptions } from "ioredis";
 import RedisSession from "telegraf-session-redis";
 
 dotenv.config();
@@ -13,26 +13,52 @@ if (!process.env.TELEGRAM_BOT_TOKEN) {
 }
 
 // --- Redis Session Setup ---
-const redisClient = new Redis(process.env.REDIS_URL!); // Use ioredis.  Make sure REDIS_URL is set!
-const redisSession = new RedisSession({
-  store: {
-    host: process.env.REDIS_URL!, //Connection string
-    port: process.env.REDIS_PORT!, //Port
-    // You can add other Redis options here if needed (e.g., password)
-  },
-  getSessionKey: (ctx) => {
-    // Use both chat ID and user ID to create a unique session key.
-    // This handles cases where a user might use the bot in a group and privately.
-    return ctx.from && ctx.chat
-      ? `<span class="math-inline">\{ctx\.from\.id\}\:</span>{ctx.chat.id}`
-      : undefined;
-  },
-});
+let redisClient: Redis;
+let redisSession: RedisSession;
 
-// --- In-Memory Storage (for single user, no persistence) ---
-let currentOrganizationId: string | null = null;
-let currentChatId: number | null = null;
-// let cleanupPusher: (() => void) | null = null;
+if (process.env.REDIS_URL) {
+  try {
+    const parsedUrl = new URL(process.env.REDIS_URL);
+    const host = parsedUrl.hostname;
+    const port = parseInt(parsedUrl.port, 10);
+    const password = parsedUrl.password
+      ? decodeURIComponent(parsedUrl.password)
+      : undefined; // Handle undefined
+    const username = parsedUrl.username
+      ? decodeURIComponent(parsedUrl.username)
+      : undefined;
+
+    // Check for required values *before* creating the client
+    if (!host || isNaN(port)) {
+      throw new Error("Invalid REDIS_URL: Hostname or port is missing or invalid.");
+    }
+
+    redisClient = new Redis({
+      host: host,
+      port: port,
+      password: password, // Can be undefined
+      username: username,
+    });
+
+    redisSession = new RedisSession({
+      store: {
+        host: host, // Pass values directly
+        port: port,
+        password: password, // Can be undefined
+      },
+      getSessionKey: (ctx) => {
+        return ctx.from && ctx.chat ? `${ctx.from.id}:${ctx.chat.id}` : undefined;
+      },
+    });
+    console.log("Redis client initialized.");
+  } catch (error) {
+    console.error("Error initializing Redis:", error);
+    process.exit(1); // Exit on Redis connection failure
+  }
+} else {
+  console.error("REDIS_URL is not defined in .env");
+  process.exit(1); // Exit if REDIS_URL is not set
+}
 
 //Extend the telegraf context
 interface SessionData {
@@ -80,21 +106,12 @@ interface SessionData {
     token: string;
     expireAt: number; //store the entire token data.
   };
-  sid?: string;
 }
 export interface MyContext extends Context {
   session: SessionData;
-  tokenData?: {
-    // Add tokenData to MyContext, make it optional
-    token: string;
-    expiresAt: number;
-  };
 }
 
 const bot = new Telegraf<MyContext>(process.env.TELEGRAM_BOT_TOKEN);
-
-// // In-memory session (replace with Redis later)
-// bot.use(session());
 
 // Use Redis for session storage
 bot.use(redisSession.middleware());
@@ -153,19 +170,50 @@ Available Commands:
 });
 
 // Graceful shutdown
-process.once("SIGINT", () => {
+process.once("SIGINT", async () => {
+  // Make sure to handle promises.
   for (const cleanup of cleanupTasks.values()) {
-    cleanup(); // Execute all cleanup functions.
+    try {
+      cleanup();
+    } catch (error) {
+      console.error("Error during cleanup", error);
+    }
   }
-  bot.stop("SIGINT");
-  redisClient.quit(); // Quit the Redis connection *AFTER* stopping the bot
+  try {
+    await bot.stop("SIGINT"); // bot.stop is async
+    console.log("Bot stopped.");
+  } catch (error) {
+    console.error("Error stopping bot:", error);
+  }
+  try {
+    await redisClient.quit();
+    console.log("Redis client disconnected");
+  } catch (error) {
+    console.error("Error closing redis client", error);
+  }
+  process.exit(0); // Exit after all cleanup
 });
-process.once("SIGTERM", () => {
+process.once("SIGTERM", async () => {
+  // Make sure to handle promises.
   for (const cleanup of cleanupTasks.values()) {
-    cleanup(); // Execute all cleanup functions.
+    try {
+      cleanup();
+    } catch (error) {
+      console.error("Error during cleanup:", error);
+    }
   }
-  bot.stop("SIGTERM");
-  redisClient.quit(); // Quit the Redis connection *AFTER* stopping the bot
+  try {
+    await bot.stop("SIGTERM");
+    console.log("Bot stopped");
+  } catch (error) {
+    console.error("Error stopping bot:", error);
+  }
+  try {
+    await redisClient.quit();
+    console.log("Redis Client Disconnected");
+  } catch (error) {
+    console.error("Error closing redis connection");
+  }
+  process.exit(0); // Exit after all cleanup
 });
-
 export { bot };
