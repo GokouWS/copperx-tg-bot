@@ -16,16 +16,21 @@ copperx-telegram-bot/
 │   ├── commands/                 # Telegram bot commands
 │   │   ├── balance.ts            # Handles /balance and related commands (e.g., sub-commands, variations).
 │   │   ├── login.ts              # Handles /login command.
+│   │   ├── logout.ts             # Handles /logout command.
 │   │   ├── send.ts               # Handles /send command for sending funds.
-│   │   ├── withdraw.ts           # Handles /withdraw command.
+│   │   ├── start.ts              # Handles /start command for starting bot.
+│   │   ├── withdraw.ts           # Handles /withdraw command for withdrawing to bank.
 │   │   └── index.ts              # Combines and exports all command modules for easy access.
 │   ├── events/                   # Event handlers (besides commands)
 │   │   └── deposit.ts            # Handles deposit notification events.
 │   ├── utils/                    # Utility functions and middleware
+│   │   ├── errorHandler.ts       # Error handling functions for handling function and API errors.
 │   │   ├── helpers.ts            # Utility functions (e.g., currency formatting, data validation).
+│   │   ├── menu.ts               # Reusable menu for chat replies.
 │   │   └── middleware.ts         # Authentication middleware to protect commands.
 │   ├── index.ts                  # Main bot entry point.
-│   └── bot.ts                    # Bot setup, initialization, and connection to Telegram.
+│   ├── bot.ts                    # Bot setup, initialization, and connection to Telegram.
+│   └── types.ts                  # Type definitions.
 ├── .env                          # Environment variables (API keys, bot token, etc. - KEEP THIS SECRET!)
 ├── package.json                  # Project dependencies, scripts, and metadata.
 ├── tsconfig.json                 # TypeScript configuration.
