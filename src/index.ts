@@ -1,40 +1,29 @@
-// Main bot entry point
-import { getUserProfile, isTokenExpired } from "./api";
-import { bot, initializeUserSession } from "./bot";
+// src/index.ts
+import { bot } from "./bot";
 import { setupCommands } from "./commands";
 
-// Setup commands
-setupCommands();
+async function main() {
+  // Wrap everything in an async function
+  try {
+    // Set up commands
+    console.log("Calling setupCommands");
+    setupCommands();
 
-// Start the bot
-bot
-  .launch()
-  .then(() => {
+    // Start the bot and *await* the launch
+    console.log("Starting bot...");
+    await bot.launch();
     console.log("Bot is running...");
-  })
-  .catch((err) => {
+  } catch (err) {
     console.error("Failed to start bot:", err);
-    process.exit(1); // Exit with error code
-  });
-
-//fetch the orgId after login and initialize user session.
-bot.command("start", async (ctx) => {
-  const tokenData = ctx.session.tokenData;
-  if (tokenData && !isTokenExpired(tokenData)) {
-    try {
-      const { token } = tokenData;
-      const userProfile = await getUserProfile(token);
-      const organizationId = userProfile.organizationId;
-      console.log("Organization ID from /start:", organizationId);
-      if (organizationId) {
-        initializeUserSession(ctx.chat.id, token, organizationId); // Initialize
-      } else {
-        ctx.reply("Could not retrieve organization ID. Please contact support.");
-      }
-    } catch (error) {
-      ctx.reply("Failed to initialize user session.");
+    if (err instanceof Error) {
+      console.error("Error Name:", err.name);
+      console.error("Error Message:", err.message);
+      console.error("Error Stack:", err.stack);
+    } else {
+      console.error("Unknown Error:", err);
     }
-  } else {
-    ctx.reply("Welcome to the Copperx bot, /login to begin.");
+    process.exit(1);
   }
-});
+}
+
+main(); // Call the main function
