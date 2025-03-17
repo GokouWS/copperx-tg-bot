@@ -2,16 +2,24 @@
 import { Context } from "telegraf";
 import * as balance from "./balance";
 import * as login from "./login";
+import * as logout from "./logout";
 import * as send from "./send";
+import * as start from "./start";
 import * as withdraw from "./withdraw";
-import { bot, MyContext } from "../bot";
+import { bot, cleanupTasks, MyContext } from "../bot";
 import { checkTokenExpiration } from "../utils/middleware";
 import { sendToEmail, sendToWallet } from "../api";
 import { getCallbackQueryData } from "../utils/helpers";
 import { handleApiError } from "../utils/errorHandler";
 
 export function setupCommands() {
-  // Login command - Does NOT need the middleware, as it's for authentication
+  console.log("setupCommands: START");
+  // --- Command Handlers ---
+
+  // Start command (now in its own file)
+  bot.command("start", start.handleStart);
+
+  // Login command
   bot.command("login", login.handleLogin);
 
   // --- Commands that require authentication (and token check) ---
@@ -32,6 +40,9 @@ export function setupCommands() {
   bot.command("sendemail", checkTokenExpiration, send.handleSendEmail); // Add middleware
   bot.command("sendwallet", checkTokenExpiration, send.handleSendWallet); // Add middleware
   bot.command("last10transactions", checkTokenExpiration, send.handleLast10Transactions); // Add middleware
+
+  //Logout command
+  bot.command("logout", logout.handleLogout);
 
   // --- Confirmation Actions ---
   bot.action("confirm_transaction", checkTokenExpiration, async (ctx) => {
@@ -93,41 +104,54 @@ export function setupCommands() {
       return; // Exit early if invalid callback query
     }
     await ctx.answerCbQuery();
-    ctx.session.pendingTransaction = null;
+    ctx.session.pendingTransaction = null; // Clear pending transaction from session
     await ctx.editMessageText("Transaction cancelled.");
     ctx.session.step = "idle";
   });
 
+  // --- Action Handlers for /start buttons ---
+  bot.action("login_button", async (ctx: MyContext) => {
+    await ctx.answerCbQuery();
+    await login.handleLogin(ctx); // Directly call handleLogin
+  });
+
+  bot.action("help_button", async (ctx: MyContext) => {
+    await ctx.answerCbQuery();
+    await ctx.reply(`Available Commands: ...`); // Your help message
+  });
+
   // General message handler.  This needs to come *after* specific command handlers.
-  bot.on("text", (ctx: MyContext) => {
+  bot.on("text", async (ctx: MyContext) => {
     switch (ctx.session.step) {
       case "awaitingEmail":
-        login.handleEmailInput(ctx);
+        await login.handleEmailInput(ctx);
         break;
       case "awaitingOtp":
-        login.handleOtpInput(ctx);
+        await login.handleOtpInput(ctx);
         break;
       case "awaitingRecipientEmail":
-        send.handleRecipientEmailInput(ctx);
+        await send.handleRecipientEmailInput(ctx);
         break;
       case "awaitingAmount":
-        send.handleAmountInput(ctx);
+        await send.handleAmountInput(ctx);
         break;
       case "awaitingCurrency":
-        send.handleCurrencyInput(ctx);
+        await send.handleCurrencyInput(ctx);
         break;
       case "awaitingWalletAddress":
-        send.handleWalletAddressInput(ctx);
+        await send.handleWalletAddressInput(ctx);
         break;
       case "awaitingWalletAmount":
-        send.handleWalletAmountInput(ctx);
+        await send.handleWalletAmountInput(ctx);
         break;
       case "awaitingWalletCurrency":
-        send.handleWalletCurrencyInput(ctx);
+        await send.handleWalletCurrencyInput(ctx);
         break;
       default:
         // Show a default message.
         ctx.reply("Sorry, I didn't understand that command.");
     }
   });
+
+  console.log("setupCommands: END");
 }
