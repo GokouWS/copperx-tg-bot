@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { setupDepositNotifications } from "./events/deposit";
 import Redis, { RedisOptions } from "ioredis";
 import RedisSession from "telegraf-session-redis";
+import Pusher from "pusher";
 
 dotenv.config();
 
@@ -11,6 +12,13 @@ if (!process.env.TELEGRAM_BOT_TOKEN) {
   console.error("TELEGRAM_BOT_TOKEN is not defined in .env");
   process.exit(1);
 }
+
+// const pusher = new Pusher({
+//   appId: process.env.PUSHER_APP_ID!,
+//   key: process.env.PUSHER_KEY!,
+//   secret: process.env.PUSHER_SECRET!,
+//   cluster: process.env.PUSHER_CLUSTER!,
+// });
 
 // --- Redis Session Setup ---
 let redisClient: Redis;
@@ -106,6 +114,8 @@ interface SessionData {
     token: string;
     expireAt: number; //store the entire token data.
   };
+  context?: {};
+  sid?: string;
 }
 export interface MyContext extends Context {
   session: SessionData;
@@ -118,14 +128,25 @@ bot.use(redisSession.middleware());
 
 // Initialize session middleware and set default
 bot.use(async (ctx, next) => {
+  // console.log(
+  //   "Global Middleware - Session BEFORE:",
+  //   JSON.stringify(ctx.session, null, 2),
+  // );
   if (!ctx.session) {
-    ctx.session = { step: "idle" }; // Set default values.
+    ctx.session = { step: "idle", context: {} }; // Set default values.
   }
+
+  // Initialize context to empty object if undefined
+  if (!ctx.session.context) {
+    ctx.session.context = {};
+  }
+
   await next();
+  // console.log("Global Middleware - Session AFTER:", JSON.stringify(ctx.session, null, 2));
 });
 
 //Keep track of cleanup tasks
-const cleanupTasks = new Map<number, () => void>();
+export const cleanupTasks = new Map<number, () => void>();
 
 // Function to store cleanup tasks
 export async function initializeUserSession(
@@ -145,13 +166,8 @@ export async function initializeUserSession(
   !!cleanupPusher && cleanupTasks.set(chatId, cleanupPusher); // Store cleanup function.
 }
 
-// /start command
-bot.start((ctx: Context) => {
-  ctx.reply("Welcome to the Copperx Telegram Bot! Use /help to see available commands.");
-});
-
 // /help command
-bot.help((ctx: Context) => {
+bot.help((ctx: MyContext) => {
   ctx.reply(`
 Available Commands:
 
