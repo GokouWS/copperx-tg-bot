@@ -29,6 +29,18 @@ export async function authenticateEmailOtp(email: string, otp: string) {
   }
 }
 
+export async function logout(token: string) {
+  //Used later
+  try {
+    const response = await axios.get(`${baseURL}/auth/logout`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    throw createApiError(error);
+  }
+}
+
 export async function getUserProfile(token: string) {
   //Used later
   try {
