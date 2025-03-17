@@ -17,11 +17,12 @@ export async function requestEmailOtp(email: string) {
   }
 }
 
-export async function authenticateEmailOtp(email: string, otp: string) {
+export async function authenticateEmailOtp(email: string, otp: string, sid: string) {
   try {
     const response = await axios.post(`${baseURL}/auth/email-otp/authenticate`, {
       email,
       otp,
+      sid,
     });
     return response.data; //This now returns the entire data
   } catch (error) {

@@ -9,6 +9,7 @@ import {
 } from "../api";
 import { escapeInput, getMessageText, isValidEmail } from "../utils/helpers";
 import { handleApiError } from "../utils/errorHandler";
+import { buildMenu } from "../utils/menu";
 
 // // Function to escape MarkdownV2 reserved characters *specifically within a URL*
 // function escapeMarkdownV2Url(url: string): string {
@@ -36,9 +37,12 @@ export async function handleEmailInput(ctx: MyContext) {
   const email = messageText;
 
   try {
-    await requestEmailOtp(email);
+    const otpRequestResult = await requestEmailOtp(email);
     ctx.reply("An OTP has been sent to your email. Please enter the OTP:");
     ctx.session.email = email; // Store email for OTP verification
+    // Store sid if it was in the response, otherwise generate one
+    const sid = otpRequestResult.sid;
+    ctx.session.sid = sid; // Store the sid
     ctx.session.step = "awaitingOtp";
   } catch (emailError) {
     handleApiError(ctx, emailError);
@@ -47,6 +51,7 @@ export async function handleEmailInput(ctx: MyContext) {
 }
 
 export async function handleOtpInput(ctx: MyContext) {
+  const menu = buildMenu(ctx);
   // Guard clause: check if ctx.message is a TextMessage
   const messageText = getMessageText(ctx); // Use the helper!
   if (!messageText) {
@@ -61,16 +66,18 @@ export async function handleOtpInput(ctx: MyContext) {
   }
 
   // Guard clause: Check if email is in the session
-  if (!ctx.session.email) {
-    ctx.reply("Your session seems to have expired. Please start again with /login.");
+  if (!ctx.session.email || !ctx.session.sid) {
+    const menu = buildMenu(ctx);
+    ctx.reply("Your session seems to have expired. Please login again", menu);
     ctx.session.step = "idle";
     return;
   }
 
   const email = ctx.session.email;
+  const sid = ctx.session.sid;
 
   try {
-    const authResult = await authenticateEmailOtp(email, otp);
+    const authResult = await authenticateEmailOtp(email, otp, sid);
     const token = authResult.accessToken;
     const expireAt = new Date(authResult.expireAt).getTime();
 
@@ -97,14 +104,17 @@ export async function handleOtpInput(ctx: MyContext) {
 
     // console.log(userProfile);
     if (!userProfile.firstName) {
-      ctx.reply(`Welcome, you are now logged in as ${userProfile.email}!`);
+      ctx.reply(`Welcome back, you are now logged in as ${userProfile.email}!`, menu);
     } else {
-      ctx.reply(`Welcome, ${userProfile.firstName} ${userProfile.lastName ?? ""}!`);
+      ctx.reply(
+        `Welcome back, ${userProfile.firstName} ${userProfile.lastName ?? ""}!`,
+        menu,
+      );
     }
 
     const kycStatus = await getKycStatus(token);
     if (kycStatus.length > 0 && kycStatus[0].status === "approved") {
-      ctx.reply("Your KYC is approved. You can now use all features.");
+      ctx.reply("Your KYC is approved. You can now use all features.", menu);
     } else {
       //TODO find out why escaping characters isn't working properly in template literals
       // Escape the URL for MarkdownV2 *before* putting it in the link
@@ -115,12 +125,10 @@ export async function handleOtpInput(ctx: MyContext) {
       // ctx.reply(message, {
       //   parse_mode: "MarkdownV2",
       // });
-      ctx.reply(
-        "Your KYC is not approved\\. Please complete your KYC on the [Copperx platform](https://payout\\.copperx\\.io/app/)",
-        {
-          parse_mode: "MarkdownV2",
-        },
-      );
+      let message = "Your KYC is not approved\\. Some features may not be available.\n\n";
+      message +=
+        "Please complete your KYC on the [Copperx platform](https://payout\\.copperx\\.io/app/)";
+      ctx.replyWithMarkdownV2(message, menu);
     }
     ctx.session.step = "idle";
   } catch (error) {
