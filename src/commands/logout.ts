@@ -1,5 +1,6 @@
 // src/commands/logout.ts
 import { MyContext, cleanupTasks } from "../bot";
+import { buildMenu } from "../utils/menu";
 
 export async function handleLogout(ctx: MyContext) {
   const chatId = ctx.chat!.id;
@@ -18,5 +19,6 @@ export async function handleLogout(ctx: MyContext) {
   ctx.session.step = "idle";
   ctx.session.context = {};
 
-  await ctx.reply("You have been logged out.");
+  const menu = buildMenu(ctx);
+  await ctx.reply("You have been logged out.", menu);
 }
