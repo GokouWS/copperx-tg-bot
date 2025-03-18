@@ -28,7 +28,9 @@ export async function handleStart(ctx: MyContext) {
     }
 
     initializeUserSession(ctx.chat!.id, token, organizationId);
-    await ctx.reply("You are logged in. Welcome back!", menu);
+    const email = ctx.session.email!;
+    const message = `Welcome back! You are logged in as ${email}`;
+    await ctx.reply(message, menu);
   } catch (error) {
     await ctx.reply("Failed to initialize user session.");
   }
