@@ -61,3 +61,9 @@ export function getCallbackQueryData(ctx: MyContext): string | null {
   }
   return ctx.callbackQuery.data; // Return the data
 }
+
+export function sendLoadingMessage(ctx: MyContext, message: string): null {
+  const returnMessage = `⌛ ${message}...`;
+  ctx.reply(returnMessage);
+  return null;
+}
