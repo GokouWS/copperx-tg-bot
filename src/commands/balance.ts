@@ -10,9 +10,11 @@ import {
   getCallbackQueryData,
   validateCallbackQuery,
 } from "../utils/helpers";
+import { buildMenu } from "../utils/menu";
 
 export async function handleBalance(ctx: MyContext) {
   const token = ctx.session.tokenData!.token; // Use non-null assertion
+  const menu = buildMenu(ctx);
 
   try {
     const wallets: WalletsResponse = await getWalletBalances(token);
@@ -49,7 +51,7 @@ export async function handleBalance(ctx: MyContext) {
       }
     }
 
-    ctx.reply(message, { parse_mode: "MarkdownV2" }); // Use Markdown for bold network names
+    ctx.replyWithMarkdownV2(message, menu); // Use Markdown for bold network names
   } catch (error) {
     handleApiError(ctx, error);
   }
@@ -57,6 +59,7 @@ export async function handleBalance(ctx: MyContext) {
 
 export async function handleDefaultWallet(ctx: MyContext) {
   const token = ctx.session.tokenData!.token;
+  const menu = buildMenu(ctx);
 
   try {
     const defaultWallet = await getDefaultWallet(token);
@@ -71,7 +74,7 @@ export async function handleDefaultWallet(ctx: MyContext) {
       message += `Wallet ID: \`${defaultWallet.id}\`\n`;
       message += `Address: \`${defaultWallet.walletAddress}\` \n\n`;
       message += "Reply with /changedefaultwallet to change your default wallet";
-      ctx.reply(message, { parse_mode: "MarkdownV2" });
+      ctx.replyWithMarkdownV2(message, menu);
     }
   } catch (error) {
     handleApiError(ctx, error);
@@ -96,6 +99,7 @@ export async function handleChangeDefaultWallet(ctx: MyContext) {
 }
 export async function handleWalletChoice(ctx: MyContext) {
   const token = ctx.session.tokenData!.token;
+  const menu = buildMenu(ctx);
 
   const callbackData = getCallbackQueryData(ctx); // e.g., "set_default:wallet-id-123"
   if (!callbackData) {
@@ -109,7 +113,7 @@ export async function handleWalletChoice(ctx: MyContext) {
       await setDefaultWallet(token, walletId);
       // Acknowledge the button press *and* update the message
       ctx.answerCbQuery(`Default wallet set to ${walletId}`); // Show popup
-      ctx.editMessageText(`Default wallet set to ${walletId}`); // Remove buttons
+      ctx.editMessageText(`Default wallet set to ${walletId}`, menu); // Remove buttons
     } catch (error) {
       handleApiError(ctx, error);
       ctx.answerCbQuery("An error occurred."); // Show error in popup
