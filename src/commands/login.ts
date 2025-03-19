@@ -10,6 +10,8 @@ import {
 import { escapeInput, getMessageText, isValidEmail } from "../utils/helpers";
 import { handleApiError } from "../utils/errorHandler";
 import { buildMenu } from "../utils/menu";
+import * as start from "./start";
+import { UserProfile } from "../types";
 
 // // Function to escape MarkdownV2 reserved characters *specifically within a URL*
 // function escapeMarkdownV2Url(url: string): string {
@@ -67,7 +69,6 @@ export async function handleOtpInput(ctx: MyContext) {
 
   // Guard clause: Check if email is in the session
   if (!ctx.session.email || !ctx.session.sid) {
-    const menu = buildMenu(ctx);
     ctx.reply("Your session seems to have expired. Please login again", menu);
     ctx.session.step = "idle";
     return;
@@ -100,39 +101,65 @@ export async function handleOtpInput(ctx: MyContext) {
 
     // Store the entire auth result in the session
     ctx.session.tokenData = { token, expireAt }; // Store for use in middleware
-    ctx.reply("Login successful!");
+    // ctx.reply("Login successful!");
 
     // console.log(userProfile);
-    if (!userProfile.firstName) {
-      ctx.reply(`Welcome back, you are now logged in as ${userProfile.email}!`, menu);
-    } else {
-      ctx.reply(
-        `Welcome back, ${userProfile.firstName} ${userProfile.lastName ?? ""}!`,
-        menu,
-      );
-    }
+    // if (!userProfile.firstName) {
+    //   ctx.reply(`Welcome back, you are now logged in as ${userProfile.email}!`, menu);
+    // } else {
+    //   ctx.reply(
+    //     `Welcome back, ${userProfile.firstName} ${userProfile.lastName ?? ""}!`,
+    //     menu,
+    //   );
+    // }
 
-    const kycStatus = await getKycStatus(token);
-    if (kycStatus.length > 0 && kycStatus[0].status === "approved") {
-      ctx.reply("Your KYC is approved. You can now use all features.", menu);
-    } else {
-      //TODO find out why escaping characters isn't working properly in template literals
-      // Escape the URL for MarkdownV2 *before* putting it in the link
-      // const kycUrl = "https://payout\\.copperx\\.io/app/kyc";
-      // const escapedKycUrl = escapeMarkdownV2Url(kycUrl); // Escape the URL
-      // const kycLink = `[Copperx platform](${kycUrl})`;
-      // const message = `Your KYC is not approved\\. Please complete your KYC on the ${kycLink}.`;
-      // ctx.reply(message, {
-      //   parse_mode: "MarkdownV2",
-      // });
-      let message = "Your KYC is not approved\\. Some features may not be available.\n\n";
-      message +=
-        "Please complete your KYC on the [Copperx platform](https://payout\\.copperx\\.io/app/)";
-      ctx.replyWithMarkdownV2(message, menu);
-    }
+    // const kycStatus = await getKycStatus(token);
+    // if (kycStatus.length > 0 && kycStatus[0].status === "approved") {
+    //   ctx.reply("Your KYC is approved. You can now use all features.", menu);
+    // } else {
+    //   //TODO find out why escaping characters isn't working properly in template literals
+    //   // Escape the URL for MarkdownV2 *before* putting it in the link
+    //   // const kycUrl = "https://payout\\.copperx\\.io/app/kyc";
+    //   // const escapedKycUrl = escapeMarkdownV2Url(kycUrl); // Escape the URL
+    //   // const kycLink = `[Copperx platform](${kycUrl})`;
+    //   // const message = `Your KYC is not approved\\. Please complete your KYC on the ${kycLink}.`;
+    //   // ctx.reply(message, {
+    //   //   parse_mode: "MarkdownV2",
+    //   // });
+    //   let message =
+    //     "Your KYC is not approved\\. Some features may not be available\\.\n\n";
+    //   message +=
+    //     "Please complete your KYC on the [Copperx platform](https://payout\\.copperx\\.io/app/)";
+    //   ctx.replyWithMarkdownV2(message, menu);
+    // }
     ctx.session.step = "idle";
+    ctx.session.context = {};
+
+    // *** Call handleStart to refresh the menu ***
+    await start.handleStart(ctx); // Simulate a /start command
   } catch (error) {
     handleApiError(ctx, error);
     ctx.session.step = "idle";
   }
+}
+
+export async function handleDisplayProfile(ctx: MyContext) {
+  const token = ctx.session.tokenData!.token;
+  const menu = buildMenu(ctx);
+
+  try {
+    const userProfile = await getUserProfile(token);
+    console.log(userProfile);
+    const message = formatUserProfile(userProfile);
+    // await ctx.reply(message, menu);
+    await ctx.reply("Profile fetched", menu);
+  } catch (error) {
+    handleApiError(ctx, error);
+  }
+}
+
+function formatUserProfile(userProfile: UserProfile): any {
+  const firstName = userProfile.firstName || "";
+  const lastName = userProfile.lastName || "";
+  const email = userProfile.email || "";
 }
