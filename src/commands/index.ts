@@ -26,6 +26,9 @@ export function setupCommands() {
   // --- Commands that require authentication (and token check) ---
   // Use the middleware for all commands that require a valid token
 
+  // Profile command
+  bot.command("profile", checkTokenExpiration, login.handleDisplayProfile);
+
   // Balance commands
   bot.command("balance", checkTokenExpiration, balance.handleBalance);
   bot.command("defaultwallet", checkTokenExpiration, balance.handleDefaultWallet);
@@ -122,6 +125,10 @@ export function setupCommands() {
   });
 
   // --- Action Handlers for commands buttons ---
+  bot.action("profile_button", checkTokenExpiration, async (ctx: MyContext) => {
+    await ctx.answerCbQuery();
+    await login.handleDisplayProfile(ctx);
+  });
   bot.action("balance_button", checkTokenExpiration, async (ctx: MyContext) => {
     await ctx.answerCbQuery();
     await balance.handleBalance(ctx);
