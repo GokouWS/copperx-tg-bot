@@ -49,3 +49,7 @@ export function buildSendMenu(ctx: MyContext) {
 
   return Markup.inlineKeyboard(buttons as any, { columns: 3 });
 }
+
+export function cancelButton(ctx: MyContext) {
+  return Markup.inlineKeyboard([[Markup.button.callback("Cancel", "cancel_button")]]);
+}
