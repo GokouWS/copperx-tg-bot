@@ -149,7 +149,15 @@ export async function handleDisplayProfile(ctx: MyContext) {
 
   try {
     const userProfile = await getUserProfile(token);
+    const organizationId = userProfile.organizationId;
     console.log(userProfile);
+
+    if (!organizationId) {
+      await ctx.reply("Could not retrieve organization ID. Please contact support.");
+      return; // Exit if organization ID is missing
+    }
+
+    initializeUserSession(ctx.chat!.id, token, organizationId);
     const message = formatUserProfile(userProfile);
     // await ctx.reply(message, menu);
     await ctx.reply("Profile fetched", menu);
@@ -162,4 +170,14 @@ function formatUserProfile(userProfile: UserProfile): any {
   const firstName = userProfile.firstName || "";
   const lastName = userProfile.lastName || "";
   const email = userProfile.email || "";
+
+  //Message format
+  // Your Profile
+
+  // id
+  // name
+  // email
+  // status
+
+  //account type
 }

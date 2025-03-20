@@ -2,6 +2,7 @@
 import axios from "axios";
 import dotenv from "dotenv";
 import { createApiError } from "../utils/errorHandler";
+import { pusher } from "../bot";
 
 dotenv.config();
 
@@ -203,20 +204,26 @@ export async function authenticatePusher(
   socketId: string,
   channelName: string,
 ) {
-  console.log("Authenticating Pusher...");
+  // console.log("Authenticating Pusher...");
   try {
-    console.log("Sending Pusher auth request...");
-    const response = await axios.post(
-      `${baseURL}/notifications/auth`,
-      {
-        socket_id: socketId,
-        channel_name: channelName,
-      },
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      },
-    );
-    return response.data;
+    // console.log("Sending Pusher auth request...");
+    // const response = await axios.post(
+    //   `${baseURL}/notifications/auth`,
+    //   {
+    //     socket_id: socketId,
+    //     channel_name: channelName,
+    //   },
+    //   {
+    //     headers: { Authorization: `Bearer ${token}` },
+    //   },
+    // );
+    // console.log("Pusher auth response:", response);
+    // return response.data;
+
+    const socketData = await pusher.authenticate(socketId, channelName);
+
+    // console.log("Pusher auth response:", socketData);
+    return socketData; // This now returns the correct auth data
   } catch (error) {
     throw createApiError(error);
   }

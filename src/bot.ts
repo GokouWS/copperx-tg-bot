@@ -13,12 +13,14 @@ if (!process.env.TELEGRAM_BOT_TOKEN) {
   process.exit(1);
 }
 
-// const pusher = new Pusher({
-//   appId: process.env.PUSHER_APP_ID!,
-//   key: process.env.PUSHER_KEY!,
-//   secret: process.env.PUSHER_SECRET!,
-//   cluster: process.env.PUSHER_CLUSTER!,
-// });
+// --- Pusher Setup ---
+export const pusher = new Pusher({
+  appId: process.env.VITE_PUSHER_APP_ID!,
+  key: process.env.VITE_PUSHER_KEY!,
+  secret: process.env.VITE_PUSHER_SECRET!,
+  cluster: process.env.VITE_PUSHER_CLUSTER!,
+  useTLS: true,
+});
 
 // --- Redis Session Setup ---
 let redisClient: Redis;
@@ -128,25 +130,24 @@ bot.use(redisSession.middleware());
 
 // Initialize session middleware and set default
 bot.use(async (ctx, next) => {
-  // console.log(
-  //   "Global Middleware - Session BEFORE:",
-  //   JSON.stringify(ctx.session, null, 2),
-  // );
-  if (!ctx.session) {
-    ctx.session = { step: "idle", context: {} }; // Set default values.
-  }
+  try {
+    if (!ctx.session) {
+      ctx.session = { step: "idle", context: {} };
+    }
+    if (!ctx.session.context) {
+      ctx.session.context = {};
+    }
 
-  // Initialize context to empty object if undefined
-  if (!ctx.session.context) {
-    ctx.session.context = {};
+    await next();
+  } catch (error) {
+    console.error("Error in session middleware:", error);
+    // Handle the error appropriately (e.g., log it, skip the next middleware, etc.)
   }
-
-  await next();
-  // console.log("Global Middleware - Session AFTER:", JSON.stringify(ctx.session, null, 2));
 });
 
 //Keep track of cleanup tasks
 export const cleanupTasks = new Map<number, () => void>();
+export const pusherConnections = new Map<number, boolean>(); // Track Pusher connections
 
 // Function to store cleanup tasks
 export async function initializeUserSession(
@@ -154,6 +155,12 @@ export async function initializeUserSession(
   token: string,
   organizationId: string,
 ) {
+  // Check if Pusher is already connected for this chat ID
+  if (pusherConnections.get(chatId)) {
+    // console.log(`Pusher already connected for chat ID ${chatId}.`);
+    return; // Skip if already connected
+  }
+
   // Check for existing cleanup tasks and execute them
   if (cleanupTasks.has(chatId)) {
     const cleanup = cleanupTasks.get(chatId);
@@ -162,8 +169,12 @@ export async function initializeUserSession(
     }
   }
   //Set up new pusher subscription.
+  console.log("Setting up deposit notifications");
   const cleanupPusher = await setupDepositNotifications(token, organizationId, chatId);
-  !!cleanupPusher && cleanupTasks.set(chatId, cleanupPusher); // Store cleanup function.
+  if (cleanupPusher) {
+    cleanupTasks.set(chatId, cleanupPusher); // Store cleanup function.
+    pusherConnections.set(chatId, true); // Mark as connected
+  }
 }
 
 // /help command

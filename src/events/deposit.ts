@@ -10,36 +10,79 @@ export async function setupDepositNotifications(
   organizationId: string,
   chatId: number,
 ) {
+  // console.log(
+  //   `setupDepositNotifications called with: organizationId=${organizationId}, chatId=${chatId}`,
+  // );
+
   if (!process.env.VITE_PUSHER_KEY || !process.env.VITE_PUSHER_CLUSTER) {
     console.error("Pusher key or cluster not defined in .env");
     return;
   }
 
-  console.log("setting up pusher");
+  // console.log("Pusher key:", process.env.VITE_PUSHER_KEY); // Log the key
+  // console.log("Pusher cluster:", process.env.VITE_PUSHER_CLUSTER); // Log the cluster
 
-  const pusherClient = new Pusher(process.env.VITE_PUSHER_KEY, {
-    cluster: process.env.VITE_PUSHER_CLUSTER,
-    authorizer: (channel) => {
-      return {
-        authorize: async (socketId, callback) => {
-          try {
-            const authData = await authenticatePusher(token, socketId, channel.name);
-            callback(null, authData);
-          } catch (error) {
-            console.error("Pusher authorization error:", error);
-            const apiError = createApiError(error);
-            callback(apiError, null);
-          }
-        },
-      };
-    },
+  // console.log("setting up pusher");
+
+  let pusherClient;
+  try {
+    // Add a try-catch around the Pusher client
+    pusherClient = new Pusher(process.env.VITE_PUSHER_KEY, {
+      cluster: process.env.VITE_PUSHER_CLUSTER,
+      authorizer: (channel) => {
+        // console.log(`Authorizer called for channel: ${channel.name}`); // Log when authorizer is called
+        return {
+          authorize: async (socketId, callback) => {
+            // console.log(`Authorize called with socketId: ${socketId}`); // Log when authorize is called
+            try {
+              const authData = await authenticatePusher(token, socketId, channel.name);
+              console.log("Pusher authentication successful.");
+              callback(null, { auth: authData.auth });
+            } catch (error) {
+              console.error("Pusher authorization error:", error);
+              const apiError = createApiError(error);
+              callback(apiError, null);
+            }
+          },
+        };
+      },
+      forceTLS: true,
+    });
+  } catch (error) {
+    console.error("Error initializing Pusher client:", error); // Catch initialization errors
+    return; // Exit if client creation fails
+  }
+
+  //Log the pusher client
+  // console.log("Pusher Client", pusherClient);
+  pusherClient.connection.bind("state_change", (states: any) => {
+    // Added a state change listener
+    console.log(
+      `Pusher connection state changed: ${states.previous} -> ${states.current}`,
+    );
+  });
+  pusherClient.connection.bind("error", (error: any) => {
+    console.error("Pusher connection error:", error);
   });
 
-  // Subscribe to the private channel
-  const channel = pusherClient.subscribe(`private-org-${organizationId}`);
+  let channel;
+  try {
+    // Add a try-catch for the subscription
+    channel = pusherClient.subscribe(`private-org-${organizationId}`);
+    // console.log(`Subscribing to channel: private-org-${organizationId}`);
+  } catch (error) {
+    console.error("Error subscribing to pusher channel:", error);
+    return;
+  }
 
   channel.bind("pusher:subscription_succeeded", () => {
     console.log("Successfully subscribed to private channel");
+    bot.telegram.sendMessage(
+      chatId,
+      `📣 *Deposit Notifications Enabled*\n\n` +
+        `You will now receive notifications for new deposits\\.`,
+      { parse_mode: "MarkdownV2" },
+    );
   });
 
   channel.bind("pusher:subscription_error", (error: any) => {
