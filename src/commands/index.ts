@@ -137,6 +137,22 @@ export function setupCommands() {
     await ctx.answerCbQuery();
     await send.handleSend(ctx);
   });
+  bot.action("sendemail_button", checkTokenExpiration, async (ctx: MyContext) => {
+    await ctx.answerCbQuery();
+    await send.handleSendEmail(ctx);
+  });
+  bot.action("sendwallet_button", checkTokenExpiration, async (ctx: MyContext) => {
+    await ctx.answerCbQuery();
+    await send.handleSendWallet(ctx);
+  });
+  bot.action(
+    "last10transactions_button",
+    checkTokenExpiration,
+    async (ctx: MyContext) => {
+      await ctx.answerCbQuery();
+      await send.handleLast10Transactions(ctx);
+    },
+  );
   bot.action("withdraw_button", checkTokenExpiration, async (ctx: MyContext) => {
     await ctx.answerCbQuery();
     await send.handleSend(ctx);
