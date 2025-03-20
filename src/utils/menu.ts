@@ -11,7 +11,7 @@ export function buildMenu(ctx: MyContext) {
   if (isLoggedIn) {
     // Logged-in user: Show basic commands
     buttons.push([
-      Markup.button.callback("Profile", "balance_button"),
+      Markup.button.callback("Profile", "profile_button"),
       Markup.button.callback("Wallet", "default_wallet_button"),
     ]);
     buttons.push([
