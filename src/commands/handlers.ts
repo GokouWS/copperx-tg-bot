@@ -4,7 +4,7 @@ import * as send from "./send";
 import * as withdraw from "./withdraw";
 
 // Define a type for handler functions
-type HandlerFunction = (ctx: MyContext) => Promise<any>;
+type HandlerFunction = (ctx: MyContext) => Promise<string | void | object>;
 
 // Create a Map for the handlers
 export const handlers = new Map<MyContext["session"]["step"], HandlerFunction>([
