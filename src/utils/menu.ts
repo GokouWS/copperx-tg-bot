@@ -30,3 +30,22 @@ export function buildMenu(ctx: MyContext) {
 
   return Markup.inlineKeyboard(buttons as any, { columns: 3 });
 }
+
+export function buildSendMenu(ctx: MyContext) {
+  const isLoggedIn = ctx.session.tokenData && !isTokenExpired(ctx.session.tokenData);
+  const buttons = [];
+
+  if (isLoggedIn) {
+    // Logged-in user: Show send commands
+    buttons.push([
+      Markup.button.callback("Send To Email", "sendemail_button"),
+      Markup.button.callback("Send To Wallet", "sendwallet_button"),
+    ]);
+    buttons.push([
+      Markup.button.callback("View last 10 transactions", "last10transactions_button"),
+    ]);
+  }
+  buttons.push([Markup.button.callback("Help", "help_button")]);
+
+  return Markup.inlineKeyboard(buttons as any, { columns: 3 });
+}
