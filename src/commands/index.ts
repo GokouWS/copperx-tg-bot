@@ -74,7 +74,7 @@ export function setupCommands() {
             pending.purposeCode,
           );
           await ctx.editMessageText(
-            `Successfully sent ${pending.amount} ${pending.currency} to ${pending.email}.  Transaction ID: ${result.id}`,
+            `🟢 Successfully sent ${pending.amount} ${pending.currency} to ${pending.email}.  Transaction ID: ${result.id}`,
           );
           break;
         case "sendwallet":
@@ -87,7 +87,7 @@ export function setupCommands() {
             pending.purposeCode,
           );
           await ctx.editMessageText(
-            `Successfully sent ${pending.amount} ${pending.currency} to ${pending.walletAddress}. Transaction ID: ${result.id}`,
+            `🟢 Successfully sent ${pending.amount} ${pending.currency} to ${pending.walletAddress}. Transaction ID: ${result.id}`,
           );
           break;
         default:
@@ -109,8 +109,14 @@ export function setupCommands() {
     }
     await ctx.answerCbQuery();
     ctx.session.pendingTransaction = null; // Clear pending transaction from session
-    await ctx.editMessageText("Transaction cancelled.");
+    await ctx.editMessageText("🚫 Transaction cancelled.");
     ctx.session.step = "idle";
+  });
+
+  bot.action("cancel_button", async (ctx) => {
+    await ctx.answerCbQuery();
+    ctx.session.step = "idle";
+    await ctx.editMessageText("🚫 Action Cancelled.");
   });
 
   // --- Action Handlers for /start buttons ---
