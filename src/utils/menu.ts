@@ -51,5 +51,5 @@ export function buildSendMenu(ctx: MyContext) {
 }
 
 export function cancelButton(ctx: MyContext) {
-  return Markup.inlineKeyboard([[Markup.button.callback("🚫 Cancel", "cancel_button")]]);
+  return Markup.button.callback("🚫 Cancel", "cancel_button");
 }
