@@ -82,22 +82,9 @@ export async function handleOtpInput(ctx: MyContext) {
     const token = authResult.accessToken;
     const expireAt = new Date(authResult.expireAt).getTime();
 
-    // --- Get User Profile ---
-    const userProfile = await getUserProfile(token);
-    const organizationId = userProfile.organizationId;
-
-    console.log("Organization ID from login:", organizationId);
-
-    if (!organizationId) {
-      return ctx.reply("Could not retrieve organization ID. Please contact support.");
-    }
-
     // --- Initialize User Session (Pusher) ---
-    const chatId = ctx.chat?.id;
-    if (chatId === undefined) {
-      throw new Error("Chat ID is undefined");
-    }
-    initializeUserSession(chatId, token, organizationId);
+    // --- Get User Profile ---
+    const userProfile = await handleFetchProfile(ctx);
 
     // Store the entire auth result in the session
     ctx.session.tokenData = { token, expireAt }; // Store for use in middleware
@@ -113,25 +100,27 @@ export async function handleOtpInput(ctx: MyContext) {
     //   );
     // }
 
-    // const kycStatus = await getKycStatus(token);
-    // if (kycStatus.length > 0 && kycStatus[0].status === "approved") {
-    //   ctx.reply("Your KYC is approved. You can now use all features.", menu);
-    // } else {
-    //   //TODO find out why escaping characters isn't working properly in template literals
-    //   // Escape the URL for MarkdownV2 *before* putting it in the link
-    //   // const kycUrl = "https://payout\\.copperx\\.io/app/kyc";
-    //   // const escapedKycUrl = escapeMarkdownV2Url(kycUrl); // Escape the URL
-    //   // const kycLink = `[Copperx platform](${kycUrl})`;
-    //   // const message = `Your KYC is not approved\\. Please complete your KYC on the ${kycLink}.`;
-    //   // ctx.reply(message, {
-    //   //   parse_mode: "MarkdownV2",
-    //   // });
-    //   let message =
-    //     "Your KYC is not approved\\. Some features may not be available\\.\n\n";
-    //   message +=
-    //     "Please complete your KYC on the [Copperx platform](https://payout\\.copperx\\.io/app/)";
-    //   ctx.replyWithMarkdownV2(message, menu);
-    // }
+    const kycStatus = await getKycStatus(token);
+    console.log("KYC Status:", kycStatus);
+    ctx.session.kycStatus = kycStatus.data[0].status;
+    if (kycStatus.data[0].status === "approved") {
+      ctx.reply("Your KYC is approved. You can now use all features.");
+    } else {
+      //TODO find out why escaping characters isn't working properly in template literals
+      // Escape the URL for MarkdownV2 *before* putting it in the link
+      // const kycUrl = "https://payout\\.copperx\\.io/app/kyc";
+      // const escapedKycUrl = escapeMarkdownV2Url(kycUrl); // Escape the URL
+      // const kycLink = `[Copperx platform](${kycUrl})`;
+      // const message = `Your KYC is not approved\\. Please complete your KYC on the ${kycLink}.`;
+      // ctx.reply(message, {
+      //   parse_mode: "MarkdownV2",
+      // });
+      let message =
+        "Your KYC is not approved\\. Some features may not be available\\.\n\n";
+      message +=
+        "Please complete your KYC on the [Copperx platform](https://payout\\.copperx\\.io/app/)";
+      ctx.replyWithMarkdownV2(message);
+    }
     ctx.session.step = "idle";
     ctx.session.context = {};
 
@@ -143,41 +132,60 @@ export async function handleOtpInput(ctx: MyContext) {
   }
 }
 
-export async function handleDisplayProfile(ctx: MyContext) {
+// Fetch Profile, store specific fields in session, and setup deposit notifications
+export async function handleFetchProfile(ctx: MyContext) {
   const token = ctx.session.tokenData!.token;
-  const menu = buildMenu(ctx);
+
+  const chatId = ctx.chat?.id;
+  if (chatId === undefined) {
+    throw new Error("Chat ID is undefined");
+  }
 
   try {
     const userProfile = await getUserProfile(token);
     const organizationId = userProfile.organizationId;
-    console.log(userProfile);
 
     if (!organizationId) {
       await ctx.reply("Could not retrieve organization ID. Please contact support.");
       return; // Exit if organization ID is missing
     }
-
-    initializeUserSession(ctx.chat!.id, token, organizationId);
-    const message = formatUserProfile(userProfile);
-    // await ctx.reply(message, menu);
-    await ctx.reply("Profile fetched", menu);
+    // console.log(userProfile);
+    initializeUserSession(chatId, token, organizationId);
+    // ctx.reply("Profile fetched", buildMenu(ctx));
+    return userProfile;
   } catch (error) {
     handleApiError(ctx, error);
   }
 }
 
-function formatUserProfile(userProfile: UserProfile): any {
+export async function handleDisplayProfile(ctx: MyContext) {
+  const token = ctx.session.tokenData!.token;
+  const menu = buildMenu(ctx);
+
+  try {
+    const userProfile = await handleFetchProfile(ctx);
+    const message = formatProfileMessage(userProfile);
+    await ctx.reply(message, menu);
+    // await ctx.reply("Profile fetched", menu);
+  } catch (error) {
+    handleApiError(ctx, error);
+  }
+}
+
+function formatProfileMessage(userProfile: UserProfile): any {
+  const id = userProfile.id || "";
   const firstName = userProfile.firstName || "";
   const lastName = userProfile.lastName || "";
   const email = userProfile.email || "";
+  const status = userProfile.status || "";
+  const accountType = userProfile.type;
 
-  //Message format
-  // Your Profile
+  let message = "👤 Your Profile\n\n";
+  message += `User ID: ${id}\n`;
+  message += firstName && lastName ? `Name: ${firstName} ${lastName}\n` : "";
+  message += `Email: ${email}\n`;
+  message += `KYC Status: ${status}\n\n`;
+  message += `Account Type: ${accountType}`;
 
-  // id
-  // name
-  // email
-  // status
-
-  //account type
+  return message;
 }

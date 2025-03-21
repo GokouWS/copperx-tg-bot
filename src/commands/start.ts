@@ -3,6 +3,7 @@ import { MyContext } from "../bot";
 import { initializeUserSession } from "../bot"; // Import
 import { getUserProfile, isTokenExpired } from "../api";
 import { buildMenu } from "../utils/menu";
+import { handleFetchProfile } from "./login";
 
 export async function handleStart(ctx: MyContext) {
   const menu = buildMenu(ctx);
@@ -19,15 +20,8 @@ export async function handleStart(ctx: MyContext) {
   // If we get here, the user *is* logged in
   try {
     const token = ctx.session.tokenData.token;
-    const userProfile = await getUserProfile(token);
-    const organizationId = userProfile.organizationId;
 
-    if (!organizationId) {
-      await ctx.reply("Could not retrieve organization ID. Please contact support.");
-      return; // Exit if organization ID is missing
-    }
-
-    initializeUserSession(ctx.chat!.id, token, organizationId);
+    const userProfile = await handleFetchProfile(ctx);
     const email = ctx.session.email!;
     const message = `Welcome back! You are logged in as ${email}`;
     await ctx.reply(message, menu);

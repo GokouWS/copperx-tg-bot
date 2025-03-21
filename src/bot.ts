@@ -5,6 +5,7 @@ import { setupDepositNotifications } from "./events/deposit";
 import Redis, { RedisOptions } from "ioredis";
 import RedisSession from "telegraf-session-redis";
 import Pusher from "pusher";
+import { UserProfile } from "./types";
 
 dotenv.config();
 
@@ -88,6 +89,8 @@ interface SessionData {
     | "awaitingWithdrawalCurrency"
     | "awaitingWithdrawalPurposeCode"; //Add additional steps as needed.
   email?: string; //Store logged in email
+  userDetails?: UserProfile;
+  kycStatus?: string;
   recipientEmail?: string; //Store recipient email for send to email
   amount?: string; // Can be string or number
   currency?: string;
