@@ -8,12 +8,16 @@ import { handleApiError } from "../utils/errorHandler";
 import {
   escapeInput,
   getCallbackQueryData,
+  sendLoadingMessage,
   validateCallbackQuery,
 } from "../utils/helpers";
-import { buildMenu } from "../utils/menu";
+import { buildMenu, cancelButton } from "../utils/menu";
 
 export async function handleBalance(ctx: MyContext) {
   const token = ctx.session.tokenData!.token; // Use non-null assertion
+
+  sendLoadingMessage(ctx, "Loading your balances");
+
   const menu = buildMenu(ctx);
 
   try {
@@ -44,7 +48,7 @@ export async function handleBalance(ctx: MyContext) {
           const formattedBalance = numericBalance.toFixed(balance.decimals);
 
           // Escape all relevant parts of the message!
-          message += `  \\- ${escapeInput(balance.symbol)}: ${escapeInput(formattedBalance)}\n`;
+          message += ` ${escapeInput(balance.symbol)}: ${escapeInput(formattedBalance)}\n`;
           message += ` Address: \`${balance.address}\`\n\n`;
         }
         message += "\n";
@@ -59,6 +63,9 @@ export async function handleBalance(ctx: MyContext) {
 
 export async function handleDefaultWallet(ctx: MyContext) {
   const token = ctx.session.tokenData!.token;
+
+  sendLoadingMessage(ctx, "Loading your default wallet");
+
   const menu = buildMenu(ctx);
 
   try {
@@ -84,11 +91,16 @@ export async function handleDefaultWallet(ctx: MyContext) {
 export async function handleChangeDefaultWallet(ctx: MyContext) {
   const token = ctx.session.tokenData!.token;
 
+  sendLoadingMessage(ctx, "Retrieving list of your Wallets");
+
   try {
     const wallets: WalletsResponse = await getWalletBalances(token);
     const buttons = wallets.map((wallet) =>
       Markup.button.callback(wallet.walletId, `set_default:${wallet.walletId}`),
     );
+
+    const cancelBtn = cancelButton(ctx);
+    buttons.push(cancelBtn);
     const keyboard = Markup.inlineKeyboard(buttons, { columns: 1 }); // Arrange buttons in 1 column
 
     ctx.reply("Tap a Wallet ID to set it as your default:", keyboard);
@@ -99,6 +111,7 @@ export async function handleChangeDefaultWallet(ctx: MyContext) {
 }
 export async function handleWalletChoice(ctx: MyContext) {
   const token = ctx.session.tokenData!.token;
+  sendLoadingMessage(ctx, "Setting your default wallet");
   const menu = buildMenu(ctx);
 
   const callbackData = getCallbackQueryData(ctx); // e.g., "set_default:wallet-id-123"
@@ -112,8 +125,8 @@ export async function handleWalletChoice(ctx: MyContext) {
     try {
       await setDefaultWallet(token, walletId);
       // Acknowledge the button press *and* update the message
-      ctx.answerCbQuery(`Default wallet set to ${walletId}`); // Show popup
-      ctx.editMessageText(`Default wallet set to ${walletId}`, menu); // Remove buttons
+      ctx.answerCbQuery(`🟢 Default wallet set to ${walletId}`); // Show popup
+      ctx.editMessageText(`🟢 Default wallet set to ${walletId}`, menu); // Remove buttons
     } catch (error) {
       handleApiError(ctx, error);
       ctx.answerCbQuery("An error occurred."); // Show error in popup
