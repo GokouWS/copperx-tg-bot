@@ -63,13 +63,13 @@ export function getCallbackQueryData(ctx: MyContext): string | null {
 }
 
 export function sendLoadingMessage(ctx: MyContext, message: string): null {
-  const returnMessage = `⌛ ${message}...`;
+  const returnMessage = `🟡 ${message}...`;
   ctx.reply(returnMessage);
   return null;
 }
 
 export function sendSuccessMessage(ctx: MyContext, message: string): null {
-  const returnMessage = `✅ ${message}`;
+  const returnMessage = `🟢 ${message}`;
   ctx.reply(returnMessage);
   return null;
 }
