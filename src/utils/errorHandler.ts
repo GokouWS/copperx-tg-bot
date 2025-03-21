@@ -79,7 +79,7 @@ export function handleApiError(ctx: Context, error: unknown) {
     // if (error.statusCode) {
     //   message += ` (Status Code: ${error.statusCode})`;
     // }
-    ctx.reply(message);
+    ctx.reply("🔴 " + message);
 
     console.error("API Error Details:", {
       message: error.message,
@@ -91,7 +91,7 @@ export function handleApiError(ctx: Context, error: unknown) {
       stack: error.stack,
     });
   } else {
-    ctx.reply("An unexpected error occurred.");
+    ctx.reply("🔴 An unexpected error occurred.");
     console.error(error);
   }
 }
