@@ -133,8 +133,10 @@ export async function handleCurrencySelection(ctx: MyContext) {
     }
 
     // --- Convert amount to correct format ---
-    const numericAmount = Number(originalAmount); // Convert to number for calculation
+    const numericAmount = Number(originalAmount) * 100; // Convert to number for calculation
     const scaledAmount = String(Math.round(numericAmount * 10 ** decimals)); // Multiply, round, and convert back to string
+
+    console.log(scaledAmount);
 
     let confirmationMessage = "";
 
@@ -176,6 +178,9 @@ export async function handleCurrencySelection(ctx: MyContext) {
 *Amount:* ${escapeInput(originalAmount)} ${escapeInput(currencyStr)}
               `;
     }
+
+    console.log("scaledAmount", scaledAmount);
+    console.log("originalAmount", originalAmount);
 
     ctx.editMessageText(confirmationMessage, {
       // Use editMessageText to replace buttons
