@@ -12,6 +12,7 @@ import {
   validateCallbackQuery,
 } from "../utils/helpers";
 import { buildMenu, cancelButton } from "../utils/menu";
+import { getNetworkName } from "../utils/networks";
 
 export async function handleBalance(ctx: MyContext) {
   const token = ctx.session.tokenData!.token; // Use non-null assertion
@@ -41,17 +42,15 @@ export async function handleBalance(ctx: MyContext) {
     } else {
       for (const [network, balances] of balancesByNetwork) {
         // Escape the network name!
-        message += `*${escapeInput(network)}*:\n`;
+        message += `⚪️ *${escapeInput(getNetworkName(network))}*:\n`;
         for (const balance of balances) {
           // Convert balance to a number and format
-          const numericBalance = Number(balance.balance) / 10 ** balance.decimals;
+          const numericBalance = Number(balance.balance);
           const formattedBalance = numericBalance.toFixed(balance.decimals);
 
           // Escape all relevant parts of the message!
-          message += ` ${escapeInput(balance.symbol)}: ${escapeInput(formattedBalance)}\n`;
-          message += ` Address: \`${balance.address}\`\n\n`;
+          message += ` ${escapeInput(balance.symbol)}: ${escapeInput(formattedBalance)}\n\n`;
         }
-        message += "\n";
       }
     }
 
@@ -77,7 +76,7 @@ export async function handleDefaultWallet(ctx: MyContext) {
       );
     } else {
       let message = "Your Default Wallet:\n\n";
-      message += `*${escapeInput(defaultWallet.network)}*:\n`;
+      message += `*${escapeInput(getNetworkName(defaultWallet.network))}*:\n`;
       message += `Wallet ID: \`${defaultWallet.id}\`\n`;
       message += `Address: \`${defaultWallet.walletAddress}\` \n\n`;
       message += "Reply with /changedefaultwallet to change your default wallet";
@@ -96,7 +95,11 @@ export async function handleChangeDefaultWallet(ctx: MyContext) {
   try {
     const wallets: WalletsResponse = await getWalletBalances(token);
     const buttons = wallets.map((wallet) =>
-      Markup.button.callback(wallet.walletId, `set_default:${wallet.walletId}`),
+      Markup.button.callback(
+        // if is default show green circle, if not show white circle
+        `${wallet.isDefault ? "🟢 " : ""}${getNetworkName(wallet.network)}: ${wallet.walletId}`,
+        `set_default:${wallet.walletId}`,
+      ),
     );
 
     const cancelBtn = cancelButton(ctx);
@@ -126,7 +129,7 @@ export async function handleWalletChoice(ctx: MyContext) {
       await setDefaultWallet(token, walletId);
       // Acknowledge the button press *and* update the message
       ctx.answerCbQuery(`🟢 Default wallet set to ${walletId}`); // Show popup
-      ctx.editMessageText(`🟢 Default wallet set to ${walletId}`, menu); // Remove buttons
+      ctx.reply(`🟢 Default wallet set to ${walletId}`, menu); // Remove buttons
     } catch (error) {
       handleApiError(ctx, error);
       ctx.answerCbQuery("An error occurred."); // Show error in popup
