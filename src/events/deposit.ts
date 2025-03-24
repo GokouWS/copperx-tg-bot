@@ -3,6 +3,7 @@ import Pusher from "pusher-js";
 import { authenticatePusher } from "../api";
 import { bot, MyContext } from "../bot"; // Import bot
 import { createApiError } from "../utils/errorHandler";
+import { getNetworkName } from "../utils/networks";
 
 // Initialize Pusher client with authentication
 export async function setupDepositNotifications(
@@ -95,7 +96,7 @@ export async function setupDepositNotifications(
     bot.telegram.sendMessage(
       chatId,
       `💰 *New Deposit Received*\n\n` +
-        `${data.amount} USDC deposited on ${data.network}`,
+        `${data.amount} USDC deposited on ${getNetworkName(data.network)}`,
       { parse_mode: "MarkdownV2" },
     );
   });
