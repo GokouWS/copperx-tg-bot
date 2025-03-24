@@ -7,7 +7,12 @@ import {
   getUserProfile,
   requestEmailOtp,
 } from "../api";
-import { escapeInput, getMessageText, isValidEmail } from "../utils/helpers";
+import {
+  escapeInput,
+  getMessageText,
+  isValidEmail,
+  sendLoadingMessage,
+} from "../utils/helpers";
 import { handleApiError } from "../utils/errorHandler";
 import { buildMenu } from "../utils/menu";
 import * as start from "./start";
@@ -39,6 +44,7 @@ export async function handleEmailInput(ctx: MyContext) {
   const email = messageText;
 
   try {
+    sendLoadingMessage(ctx, "Requesting OTP");
     const otpRequestResult = await requestEmailOtp(email);
     ctx.reply("An OTP has been sent to your email. Please enter the OTP:");
     ctx.session.email = email; // Store email for OTP verification
@@ -78,13 +84,14 @@ export async function handleOtpInput(ctx: MyContext) {
   const sid = ctx.session.sid;
 
   try {
+    sendLoadingMessage(ctx, "Authenticating OTP");
     const authResult = await authenticateEmailOtp(email, otp, sid);
     const token = authResult.accessToken;
     const expireAt = new Date(authResult.expireAt).getTime();
 
     // --- Initialize User Session (Pusher) ---
     // --- Get User Profile ---
-    const userProfile = await handleFetchProfile(ctx);
+    const userProfile = await handleFetchProfile(ctx, token);
 
     // Store the entire auth result in the session
     ctx.session.tokenData = { token, expireAt }; // Store for use in middleware
@@ -133,8 +140,8 @@ export async function handleOtpInput(ctx: MyContext) {
 }
 
 // Fetch Profile, store specific fields in session, and setup deposit notifications
-export async function handleFetchProfile(ctx: MyContext) {
-  const token = ctx.session.tokenData!.token;
+export async function handleFetchProfile(ctx: MyContext, token?: string) {
+  if (token === undefined) token = ctx.session.tokenData!.token;
 
   const chatId = ctx.chat?.id;
   if (chatId === undefined) {
