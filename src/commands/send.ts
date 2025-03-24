@@ -13,6 +13,7 @@ import {
   getCallbackQueryData,
   getMessageText,
   isValidEmail,
+  sendLoadingMessage,
   supportedCurrencies,
 } from "../utils/helpers";
 import { WalletsResponse } from "../types";
@@ -99,9 +100,11 @@ export async function handleCurrencySelection(ctx: MyContext) {
 
   // --- Confirmation Step (sendemail) ---
   const token = ctx.session.tokenData!.token;
-  const email = ctx.session.recipientEmail!; // Now guaranteed to exist by prior steps
   const originalAmount = ctx.session.emailAmount!; // Original amount for display
-  const currencyStr = ctx.session.currency; //For clarity
+  let currencyStr = ctx.session.currency; //For clarity
+  if (currencyStr === "USD") {
+    currencyStr = "USDC";
+  }
   const purposeCode = "self";
 
   // --- Get the correct decimals value ---
@@ -128,22 +131,46 @@ export async function handleCurrencySelection(ctx: MyContext) {
     const numericAmount = Number(originalAmount); // Convert to number for calculation
     const scaledAmount = String(Math.round(numericAmount * 10 ** decimals)); // Multiply, round, and convert back to string
 
-    // *** Store the SCALED amount in the session ***
-    ctx.session.pendingTransaction = {
-      type: "sendemail",
-      token,
-      email,
-      amount: scaledAmount, // Use scaled amount here
-      currency: currencyStr,
-      purposeCode,
-    };
+    let confirmationMessage = "";
 
-    const confirmationMessage = `
-Confirm Transaction:
-Type: Send to Email
-Recipient: ${escapeInput(email)}
-Amount: ${escapeInput(originalAmount)} ${escapeInput(currencyStr)}
-        `;
+    // *** Store the SCALED amount in the session ***
+    if (ctx.session.step === "awaitingCurrency") {
+      const email = ctx.session.recipientEmail!;
+
+      ctx.session.pendingTransaction = {
+        type: "sendemail",
+        token,
+        email,
+        amount: scaledAmount, // Use scaled amount here
+        currency: currencyStr,
+        purposeCode,
+      };
+
+      confirmationMessage = `
+      Confirm Transaction:
+      Type: Send to Email
+      Recipient: ${escapeInput(email)}
+      Amount: ${escapeInput(originalAmount)} ${escapeInput(currencyStr)}
+              `;
+    } else if (ctx.session.step === "awaitingWalletCurrency") {
+      const walletAddress = ctx.session.recipientWalletAddress!;
+
+      ctx.session.pendingTransaction = {
+        type: "sendwallet",
+        token,
+        walletAddress,
+        amount: scaledAmount, // Use scaled amount here
+        currency: currencyStr,
+        purposeCode,
+      };
+
+      confirmationMessage = `
+      *Confirm Transaction:*
+*Type:* Send to Wallet
+*Recipient:* ${escapeInput(walletAddress)}
+*Amount:* ${escapeInput(originalAmount)} ${escapeInput(currencyStr)}
+              `;
+    }
 
     ctx.editMessageText(confirmationMessage, {
       // Use editMessageText to replace buttons
@@ -151,7 +178,7 @@ Amount: ${escapeInput(originalAmount)} ${escapeInput(currencyStr)}
       ...Markup.inlineKeyboard([
         Markup.button.callback("✅ Confirm", "confirm_transaction"),
         Markup.button.callback("🚫 Cancel", "cancel_transaction"),
-      ]).reply_markup, // Get just the reply_markup
+      ]),
     });
     ctx.session.step = "idle"; // Reset after confirmation
     ctx.session.context = {};
@@ -218,18 +245,29 @@ export async function handleWalletAmountInput(ctx: MyContext) {
 export async function handleLast10Transactions(ctx: MyContext) {
   const token = ctx.session.tokenData!.token;
   try {
+    sendLoadingMessage(ctx, "Fetching transaction history...");
     const transactions = await getLast10Transactions(token);
-    console.log("Last 10 Transactions:", transactions);
+    // console.log("Last 10 Transactions:", transactions);
     if (transactions.count === 0) {
       return ctx.reply("You don't have any transactions yet.");
     }
     let message = "Your Last 10 Transactions:\n\n";
     for (const transaction of transactions.data) {
-      const direction = transaction.direction;
-      const status = transaction.status;
-      const amount = transaction.emailAmount;
+      const type = transaction.type.toUpperCase();
+      const timestamp = new Date(transaction.createdAt).toLocaleString();
       const currency = transaction.currency;
-      message += `${escapeInput(direction)}: ${escapeInput(String(amount))} ${escapeInput(currency)} \\- ${escapeInput(status)}\n`; // Escape for MarkdownV2
+      const amount = transaction.amount;
+
+      let status = transaction.status.toUpperCase();
+      status === "SUCCESS" && (status += " ✅");
+      status === "PENDING" && (status += " ⏳");
+      status === "FAILED" && (status += " ❌");
+
+      const recipient = transaction.destinationAccount.walletAddress;
+
+      message += `${escapeInput(type)}: ${escapeInput(timestamp)}\n`;
+      message += `${escapeInput(currency)}: ${escapeInput(amount)} \\- ${escapeInput(status)}\n`;
+      message += `To: ${escapeInput(recipient)}\n\n`;
     }
     ctx.reply(message, { parse_mode: "MarkdownV2" });
   } catch (error) {
@@ -243,7 +281,6 @@ function cancelKeyboard(ctx: MyContext) {
 }
 
 function sendReplyMessage(ctx: MyContext, type: string, step: string) {
-  console.log(step, type);
   let message = `${type === "Wallet" ? "💸" : "📧"} Send to ${type}:\n\n`;
 
   // Email step messages
