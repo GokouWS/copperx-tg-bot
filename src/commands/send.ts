@@ -100,7 +100,12 @@ export async function handleCurrencySelection(ctx: MyContext) {
 
   // --- Confirmation Step (sendemail) ---
   const token = ctx.session.tokenData!.token;
-  const originalAmount = ctx.session.emailAmount!; // Original amount for display
+
+  let originalAmount = "";
+  if (ctx.session.step === "awaitingAmount") originalAmount = ctx.session.emailAmount!; // Original amount for display
+  if (ctx.session.step === "awaitingWalletAmount")
+    originalAmount = ctx.session.walletAmount!; // Original amount for display
+
   let currencyStr = ctx.session.currency; //For clarity
   if (currencyStr === "USD") {
     currencyStr = "USDC";
