@@ -115,8 +115,8 @@ export function setupCommands() {
 
   bot.action("cancel_button", async (ctx) => {
     await ctx.answerCbQuery();
-    ctx.session.step = "idle";
     await ctx.editMessageText("🚫 Action Cancelled.");
+    ctx.session.step = "idle";
   });
 
   // --- Action Handlers for /start buttons ---
@@ -169,8 +169,10 @@ export function setupCommands() {
   });
   bot.action("logout_button", async (ctx: MyContext) => {
     await ctx.answerCbQuery();
-    await logout.handleLogout(ctx); // Use the imported function here too
+    await logout.handleLogout(ctx);
   });
+  // Currency selection
+  bot.action(/^select_currency:.+$/, checkTokenExpiration, send.handleCurrencySelection);
 
   // Message handler
   bot.on("text", async (ctx: MyContext) => {

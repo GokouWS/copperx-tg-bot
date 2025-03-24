@@ -73,3 +73,5 @@ export function sendSuccessMessage(ctx: MyContext, message: string): null {
   ctx.reply(returnMessage);
   return null;
 }
+
+export const supportedCurrencies = ["USD"];

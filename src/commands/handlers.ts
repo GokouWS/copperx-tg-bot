@@ -13,7 +13,7 @@ export const handlers = new Map<MyContext["session"]["step"], HandlerFunction>([
     async (ctx: MyContext) => {
       /* Do nothing, or send a default message */
     },
-  ],
+  ], // Handled by actions
   ["awaitingEmail", login.handleEmailInput],
   ["awaitingOtp", login.handleOtpInput],
   ["awaitingRecipientEmail", send.handleRecipientEmailInput],
@@ -21,7 +21,12 @@ export const handlers = new Map<MyContext["session"]["step"], HandlerFunction>([
   ["awaitingCurrency", send.handleCurrencyInput],
   ["awaitingWalletAddress", send.handleWalletAddressInput],
   ["awaitingWalletAmount", send.handleWalletAmountInput],
-  ["awaitingWalletCurrency", send.handleWalletCurrencyInput],
+  [
+    "awaitingWalletCurrency",
+    async (ctx: MyContext) => {
+      /* Do nothing */
+    },
+  ], // Handled by actions
   ["awaitingBankAccountId", withdraw.handleBankAccountIdInput],
   ["awaitingWithdrawalAmount", withdraw.handleWithdrawalAmountInput],
   ["awaitingWithdrawalCurrency", withdraw.handleWithdrawalCurrencyInput],
@@ -30,5 +35,5 @@ export const handlers = new Map<MyContext["session"]["step"], HandlerFunction>([
     async (ctx: MyContext) => {
       /* Do nothing */
     },
-  ],
+  ], // Handled by actions
 ]);

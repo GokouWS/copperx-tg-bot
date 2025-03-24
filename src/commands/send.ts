@@ -8,13 +8,22 @@ import {
 } from "../api";
 import { bot, MyContext } from "../bot"; // Correctly import bot and MyContext
 import { handleApiError } from "../utils/errorHandler";
-import { escapeInput, getMessageText, isValidEmail } from "../utils/helpers";
+import {
+  escapeInput,
+  getCallbackQueryData,
+  getMessageText,
+  isValidEmail,
+} from "../utils/helpers";
 import { WalletsResponse } from "../types";
+import { buildSendMenu, cancelButton } from "../utils/menu";
 
 export async function handleSend(ctx: MyContext) {
   const token = ctx.session.tokenData!.token;
+  const menu = buildSendMenu(ctx);
+
   ctx.reply(
     "What do you want to do? /sendemail, /sendwallet or view your /last10transactions",
+    menu,
   );
 }
 
@@ -56,7 +65,9 @@ export async function handleAmountInput(ctx: MyContext) {
     return ctx.reply("Invalid amount. Please enter a positive number.");
   }
 
-  ctx.reply("Enter the currency (e.g., USD):");
+  const canelBtn = cancelButton(ctx);
+  const keyboard = Markup.inlineKeyboard([canelBtn], { columns: 1 });
+  ctx.reply("Choose the currency you want to send in:", keyboard);
   ctx.session.step = "awaitingCurrency";
   // Store original amount temporarily for display purposes ONLY.
   ctx.session.amount = amount;
@@ -65,7 +76,7 @@ export async function handleCurrencyInput(ctx: MyContext) {
   // Guard clause: Check if ctx.message is a TextMessage
   const messageText = getMessageText(ctx);
   if (!messageText) {
-    ctx.reply("Please enter a currency");
+    ctx.reply("Please select a currency");
     return;
   }
 
@@ -138,6 +149,88 @@ Amount: ${escapeInput(originalAmount)} ${escapeInput(currencyStr)}
   } catch (error) {
     handleApiError(ctx, error);
     ctx.session.step = "idle";
+  }
+}
+
+export async function handleCurrencySelection(ctx: MyContext) {
+  const callbackData = getCallbackQueryData(ctx);
+  if (!callbackData) {
+    return;
+  }
+
+  if (!callbackData.startsWith("select_currency:")) {
+    // Handle unexpected callback data (good practice)
+    await ctx.answerCbQuery("Invalid currency selection.");
+    return;
+  }
+
+  const currency = callbackData.split(":")[1];
+  ctx.session.currency = currency;
+
+  await ctx.answerCbQuery(`You selected: ${currency}`); // Acknowledge
+
+  // --- Confirmation Step (sendemail) ---
+  const token = ctx.session.tokenData!.token;
+  const email = ctx.session.recipientEmail!; // Now guaranteed to exist by prior steps
+  const originalAmount = ctx.session.amount!; // Original amount for display
+  const currencyStr = ctx.session.currency; //For clarity
+  const purposeCode = "self";
+
+  // --- Get the correct decimals value ---
+  try {
+    const wallets: WalletsResponse = await getWalletBalances(token);
+    let decimals = 0; // Default value
+    let found = false;
+    for (const wallet of wallets) {
+      for (const balance of wallet.balances) {
+        if (balance.symbol.toUpperCase() === currencyStr.toUpperCase()) {
+          decimals = balance.decimals;
+          found = true;
+          break; // Exit inner loop
+        }
+      }
+      if (found) break; //Exit outer loop.
+    }
+
+    if (!found) {
+      return ctx.editMessageText("You don't have a balance in the selected currency."); // Use editMessageText
+    }
+
+    // --- Convert amount to correct format ---
+    const numericAmount = Number(originalAmount); // Convert to number for calculation
+    const scaledAmount = String(Math.round(numericAmount * 10 ** decimals)); // Multiply, round, and convert back to string
+
+    // *** Store the SCALED amount in the session ***
+    ctx.session.pendingTransaction = {
+      type: "sendemail",
+      token,
+      email,
+      amount: scaledAmount, // Use scaled amount here
+      currency: currencyStr,
+      purposeCode,
+    };
+
+    const confirmationMessage = `
+Confirm Transaction:
+Type: Send to Email
+Recipient: ${escapeInput(email)}
+Amount: ${escapeInput(originalAmount)} ${escapeInput(currencyStr)}
+        `;
+
+    ctx.editMessageText(confirmationMessage, {
+      // Use editMessageText to replace buttons
+      parse_mode: "MarkdownV2",
+      ...Markup.inlineKeyboard([
+        Markup.button.callback("Confirm", "confirm_transaction"),
+        Markup.button.callback("Cancel", "cancel_transaction"),
+      ]).reply_markup, // Get just the reply_markup
+    });
+    ctx.session.step = "idle"; // Reset after confirmation
+    ctx.session.context = {};
+  } catch (error) {
+    handleApiError(ctx, error);
+    ctx.session.step = "idle"; // Reset step on error
+    ctx.session.context = {};
   }
 }
 

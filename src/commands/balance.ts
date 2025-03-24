@@ -103,7 +103,7 @@ export async function handleChangeDefaultWallet(ctx: MyContext) {
     buttons.push(cancelBtn);
     const keyboard = Markup.inlineKeyboard(buttons, { columns: 1 }); // Arrange buttons in 1 column
 
-    ctx.reply("Tap a Wallet ID to set it as your default:", keyboard);
+    ctx.reply("Choose a Wallet ID to set as your default:", keyboard);
     ctx.session.step = "awaitingWalletChoice"; // Use a more descriptive step name
   } catch (error) {
     handleApiError(ctx, error);
