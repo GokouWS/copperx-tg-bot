@@ -13,6 +13,7 @@ import {
   getCallbackQueryData,
   getMessageText,
   isValidEmail,
+  supportedCurrencies,
 } from "../utils/helpers";
 import { WalletsResponse } from "../types";
 import { buildSendMenu, cancelButton } from "../utils/menu";
@@ -30,7 +31,8 @@ export async function handleSend(ctx: MyContext) {
 // --- Send to Email ---
 export async function handleSendEmail(ctx: MyContext) {
   const token = ctx.session.tokenData!.token;
-  ctx.reply("Enter the recipient email address:");
+  sendReplyMessage(ctx, "Email", "email");
+
   ctx.session.step = "awaitingRecipientEmail";
 }
 
@@ -39,22 +41,27 @@ export async function handleRecipientEmailInput(ctx: MyContext) {
   // Guard clause: Check if ctx.message is a TextMessage
   const messageText = getMessageText(ctx);
   if (!messageText) {
-    ctx.reply("Please enter an email address");
+    sendReplyMessage(ctx, "Email", "emailEmpty");
+
     return;
   }
 
   if (!isValidEmail(messageText)) {
-    return ctx.reply("Invalid email format. Please enter a valid email address.");
+    sendReplyMessage(ctx, "Email", "emailInvalid");
+    return;
   }
   ctx.session.recipientEmail = messageText;
-  ctx.reply("Enter the amount:");
+  sendReplyMessage(ctx, "Email", "amount");
+
   ctx.session.step = "awaitingAmount";
 }
+
 export async function handleAmountInput(ctx: MyContext) {
   // Guard clause: Check if ctx.message is a TextMessage
   const messageText = getMessageText(ctx);
   if (!messageText) {
-    ctx.reply("Please enter the amount");
+    sendReplyMessage(ctx, "Email", "amountEmpty");
+
     return;
   }
 
@@ -62,94 +69,15 @@ export async function handleAmountInput(ctx: MyContext) {
 
   // Check by converting only temporarily
   if (isNaN(Number(amount)) || Number(amount) <= 0) {
-    return ctx.reply("Invalid amount. Please enter a positive number.");
-  }
-
-  const canelBtn = cancelButton(ctx);
-  const keyboard = Markup.inlineKeyboard([canelBtn], { columns: 1 });
-  ctx.reply("Choose the currency you want to send in:", keyboard);
-  ctx.session.step = "awaitingCurrency";
-  // Store original amount temporarily for display purposes ONLY.
-  ctx.session.amount = amount;
-}
-export async function handleCurrencyInput(ctx: MyContext) {
-  // Guard clause: Check if ctx.message is a TextMessage
-  const messageText = getMessageText(ctx);
-  if (!messageText) {
-    ctx.reply("Please select a currency");
+    sendReplyMessage(ctx, "Email", "amountInvalid");
     return;
   }
 
-  const unsafeCurrency = messageText;
-  const currency = escapeInput(unsafeCurrency).toUpperCase();
+  sendReplyMessage(ctx, "Email", "currency");
 
-  if (currency != "USD") {
-    return ctx.reply("Invalid currency. Only USD is accepted at the moment");
-  }
-
-  // --- Confirmation Step (send_email) ---
-  const token = ctx.session.tokenData!.token;
-  const email = ctx.session.recipientEmail!;
-  const originalAmount = ctx.session.amount!; // Original, unscaled amount (for display only)
-  const currencyStr = currency;
-  const purposeCode = "self";
-
-  // --- Get the correct decimals value ---
-  try {
-    const wallets: WalletsResponse = await getWalletBalances(token);
-    let decimals = 0; // Default value
-    let found = false;
-    for (const wallet of wallets) {
-      for (const balance of wallet.balances) {
-        //Use toUpperCase for comparison.
-        if (balance.symbol.toUpperCase() === currencyStr.toUpperCase()) {
-          decimals = balance.decimals;
-          found = true;
-          break; // Exit inner loop
-        }
-      }
-      if (found) break; //Exit outer loop.
-    }
-
-    if (!found) {
-      return ctx.reply("You don't have a balance in the selected currency.");
-    }
-
-    // --- Convert amount to correct format ---
-    const numericAmount = Number(originalAmount); // Convert to number for calculation
-    const scaledAmount = String(Math.round(numericAmount * 10 ** decimals)); // Multiply, round, and convert back to string
-
-    // *** Store the SCALED amount in the session ***
-    ctx.session.amount = scaledAmount;
-
-    ctx.session.pendingTransaction = {
-      type: "sendemail",
-      token,
-      email,
-      amount: scaledAmount, // Use the scaled amount here
-      currency: currencyStr,
-      purposeCode,
-    };
-
-    const confirmationMessage = `
-Confirm Transaction:
-Type: Send to Email
-Recipient: ${escapeInput(email)}
-Amount: ${escapeInput(originalAmount)} ${escapeInput(currencyStr)}
-`; // Show original amount to the user
-
-    ctx.reply(
-      confirmationMessage,
-      Markup.inlineKeyboard([
-        Markup.button.callback("Confirm", "confirm_transaction"),
-        Markup.button.callback("Cancel", "cancel_transaction"),
-      ]),
-    );
-    ctx.session.step = "idle";
-  } catch (error) {
-    handleApiError(ctx, error);
-    ctx.session.step = "idle";
-  }
+  ctx.session.step = "awaitingCurrency";
+  // Store original amount temporarily for display purposes ONLY.
+  ctx.session.emailAmount = amount;
 }
 
 export async function handleCurrencySelection(ctx: MyContext) {
@@ -172,7 +100,7 @@ export async function handleCurrencySelection(ctx: MyContext) {
   // --- Confirmation Step (sendemail) ---
   const token = ctx.session.tokenData!.token;
   const email = ctx.session.recipientEmail!; // Now guaranteed to exist by prior steps
-  const originalAmount = ctx.session.amount!; // Original amount for display
+  const originalAmount = ctx.session.emailAmount!; // Original amount for display
   const currencyStr = ctx.session.currency; //For clarity
   const purposeCode = "self";
 
@@ -221,8 +149,8 @@ Amount: ${escapeInput(originalAmount)} ${escapeInput(currencyStr)}
       // Use editMessageText to replace buttons
       parse_mode: "MarkdownV2",
       ...Markup.inlineKeyboard([
-        Markup.button.callback("Confirm", "confirm_transaction"),
-        Markup.button.callback("Cancel", "cancel_transaction"),
+        Markup.button.callback("✅ Confirm", "confirm_transaction"),
+        Markup.button.callback("🚫 Cancel", "cancel_transaction"),
       ]).reply_markup, // Get just the reply_markup
     });
     ctx.session.step = "idle"; // Reset after confirmation
@@ -237,7 +165,9 @@ Amount: ${escapeInput(originalAmount)} ${escapeInput(currencyStr)}
 // --- Send to Wallet ---
 export async function handleSendWallet(ctx: MyContext) {
   const token = ctx.session.tokenData!.token;
-  ctx.reply("Enter the recipient wallet address:");
+
+  sendReplyMessage(ctx, "Wallet", "wallet");
+
   ctx.session.step = "awaitingWalletAddress";
 }
 
@@ -245,7 +175,7 @@ export async function handleSendWallet(ctx: MyContext) {
 export async function handleWalletAddressInput(ctx: MyContext) {
   const messageText = getMessageText(ctx);
   if (!messageText) {
-    ctx.reply("Please enter a wallet address");
+    sendReplyMessage(ctx, "Wallet", "walletEmpty");
     return;
   }
 
@@ -253,17 +183,21 @@ export async function handleWalletAddressInput(ctx: MyContext) {
 
   // Basic validation (could add network-specific validation)
   if (!/^[a-zA-Z0-9]+$/.test(walletAddress)) {
-    return ctx.reply("Invalid wallet address format.");
+    sendReplyMessage(ctx, "Wallet", "walletInvalid");
+    return;
   }
 
   ctx.session.recipientWalletAddress = messageText;
-  ctx.reply("Enter the amount:");
+
+  sendReplyMessage(ctx, "Wallet", "amount");
+
   ctx.session.step = "awaitingWalletAmount";
 }
+
 export async function handleWalletAmountInput(ctx: MyContext) {
   const messageText = getMessageText(ctx);
   if (!messageText) {
-    ctx.reply("Please enter an amount");
+    sendReplyMessage(ctx, "Wallet", "amountEmpty");
     return;
   }
 
@@ -271,90 +205,14 @@ export async function handleWalletAmountInput(ctx: MyContext) {
 
   if (isNaN(Number(amount)) || Number(amount) <= 0) {
     // Check by converting
-    return ctx.reply("Invalid amount. Please enter a positive number.");
-  }
-  ctx.session.walletAmount = amount;
-  ctx.reply("Enter the currency (e.g., USDC):");
-  ctx.session.step = "awaitingWalletCurrency";
-}
-export async function handleWalletCurrencyInput(ctx: MyContext) {
-  // Guard clause: Check if ctx.message is a TextMessage
-  const messageText = getMessageText(ctx);
-  if (!messageText) {
-    ctx.reply("Please enter a currency");
+    sendReplyMessage(ctx, "Wallet", "amountInvalid");
     return;
   }
+  ctx.session.walletAmount = amount;
 
-  const unsafeCurrency = messageText;
-  const currency = escapeInput(unsafeCurrency).toUpperCase();
+  sendReplyMessage(ctx, "Wallet", "currency");
 
-  if (currency != "USD") {
-    return ctx.reply("Invalid currency. Only USD is accepted at the moment");
-  }
-
-  // --- Confirmation Step (send_email) ---
-  const token = ctx.session.tokenData!.token;
-  const walletAddress = ctx.session.recipientWalletAddress!;
-  const originalAmount = ctx.session.walletAmount!; // Original, unscaled amount (for display only)
-  const currencyStr = currency;
-  const purposeCode = "self";
-
-  // --- Get the correct decimals value ---
-  try {
-    const wallets: WalletsResponse = await getWalletBalances(token);
-    let decimals = 0; // Default value
-    let found = false;
-    for (const wallet of wallets) {
-      for (const balance of wallet.balances) {
-        //Use toUpperCase for comparison.
-        if (balance.symbol.toUpperCase() === currencyStr.toUpperCase()) {
-          decimals = balance.decimals;
-          found = true;
-          break; // Exit inner loop
-        }
-      }
-      if (found) break; //Exit outer loop.
-    }
-
-    if (!found) {
-      return ctx.reply("You don't have a balance in the selected currency.");
-    }
-
-    // --- Convert amount to correct format ---
-    const numericAmount = Number(originalAmount); // Convert to number for calculation
-    const scaledAmount = String(Math.round(numericAmount * 10 ** decimals)); // Multiply, round, and convert back to string
-
-    // *** Store the SCALED amount in the session ***
-    ctx.session.walletAmount = scaledAmount;
-
-    ctx.session.pendingTransaction = {
-      type: "sendwallet",
-      token,
-      walletAddress,
-      amount: scaledAmount, // Use the scaled amount here
-      currency: currencyStr,
-      purposeCode,
-    };
-
-    const confirmationMessage = `
-Confirm Transaction:
-Type: Send to Wallet
-Recipient: ${escapeInput(walletAddress)}
-Amount: ${escapeInput(originalAmount)} ${escapeInput(currencyStr)}
-`; // Show original amount to the user
-
-    ctx.reply(
-      confirmationMessage,
-      Markup.inlineKeyboard([
-        Markup.button.callback("Confirm", "confirm_transaction"),
-        Markup.button.callback("Cancel", "cancel_transaction"),
-      ]),
-    );
-    ctx.session.step = "idle";
-  } catch (error) {
-    handleApiError(ctx, error);
-    ctx.session.step = "idle";
-  }
+  ctx.session.step = "awaitingWalletCurrency";
 }
 
 export async function handleLast10Transactions(ctx: MyContext) {
@@ -369,7 +227,7 @@ export async function handleLast10Transactions(ctx: MyContext) {
     for (const transaction of transactions.data) {
       const direction = transaction.direction;
       const status = transaction.status;
-      const amount = transaction.amount;
+      const amount = transaction.emailAmount;
       const currency = transaction.currency;
       message += `${escapeInput(direction)}: ${escapeInput(String(amount))} ${escapeInput(currency)} \\- ${escapeInput(status)}\n`; // Escape for MarkdownV2
     }
@@ -377,4 +235,58 @@ export async function handleLast10Transactions(ctx: MyContext) {
   } catch (error) {
     handleApiError(ctx, error);
   }
+}
+
+function cancelKeyboard(ctx: MyContext) {
+  const canelBtn = cancelButton(ctx);
+  return Markup.inlineKeyboard([canelBtn], { columns: 1 });
+}
+
+function sendReplyMessage(ctx: MyContext, type: string, step: string) {
+  console.log(step, type);
+  let message = `${type === "Wallet" ? "💸" : "📧"} Send to ${type}:\n\n`;
+
+  // Email step messages
+  step === "email" && (message += "Enter the recipient email address:");
+  step === "emailEmpty" && (message += "Please enter an email address");
+  step === "emailInvalid" &&
+    (message += "Invalid email format. Please enter a valid email address.");
+
+  // Wallet step messages
+  step === "wallet" && (message += "Enter the recipient wallet address:");
+  step === "walletEmpty" && (message += "Please enter a wallet address");
+  step === "walletInvalid" && (message += "Invalid wallet address format.");
+
+  // Amount step messages
+  step === "amount" && type === "Wallet"
+    ? (message += `Wallet Address: ${ctx.session.recipientWalletAddress}\n\n`)
+    : step === "amount" &&
+      type === "Email" &&
+      (message += `Email Address: ${ctx.session.recipientEmail}\n\n`);
+  step === "amount" && (message += "Enter the amount:");
+  step === "amountEmpty" && (message += "Please enter an amount");
+  step === "amountInvalid" &&
+    (message += "Invalid amount. Please enter a positive number.");
+
+  // Currency step messages
+  step === "currency" && type === "Wallet"
+    ? (message += `Transfer Amount: ${ctx.session.walletAmount}\n\n`)
+    : step === "currency" &&
+      type === "Email" &&
+      (message += `Transfer Amount: ${ctx.session.emailAmount}\n\n`);
+  step === "currency" && (message += "Choose the currency you want to send in:");
+
+  // Case for selecting currency
+  if (step === "currency") {
+    const cancelBtn = cancelButton(ctx);
+    const currencyButtons = supportedCurrencies.map((currency) =>
+      Markup.button.callback(currency, `select_currency:${currency}`),
+    );
+    const keyboard = Markup.inlineKeyboard([...currencyButtons, cancelBtn], {
+      columns: 1,
+    });
+    return ctx.reply(message, keyboard);
+  }
+
+  return ctx.reply(message, cancelKeyboard(ctx));
 }

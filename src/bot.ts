@@ -92,7 +92,7 @@ interface SessionData {
   userDetails?: UserProfile;
   kycStatus?: string;
   recipientEmail?: string; //Store recipient email for send to email
-  amount?: string; // Can be string or number
+  emailAmount?: string; // Can be string or number
   currency?: string;
   recipientWalletAddress?: string;
   walletAmount?: string;
