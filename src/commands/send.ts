@@ -102,8 +102,8 @@ export async function handleCurrencySelection(ctx: MyContext) {
   const token = ctx.session.tokenData!.token;
 
   let originalAmount = "";
-  if (ctx.session.step === "awaitingAmount") originalAmount = ctx.session.emailAmount!; // Original amount for display
-  if (ctx.session.step === "awaitingWalletAmount")
+  if (ctx.session.step === "awaitingCurrency") originalAmount = ctx.session.emailAmount!; // Original amount for display
+  if (ctx.session.step === "awaitingWalletCurrency")
     originalAmount = ctx.session.walletAmount!; // Original amount for display
 
   let currencyStr = ctx.session.currency; //For clarity
@@ -153,9 +153,9 @@ export async function handleCurrencySelection(ctx: MyContext) {
 
       confirmationMessage = `
       Confirm Transaction:
-      Type: Send to Email
-      Recipient: ${escapeInput(email)}
-      Amount: ${escapeInput(originalAmount)} ${escapeInput(currencyStr)}
+*Type:* Send to Email
+*Recipient:* ${escapeInput(email)}
+*Amount:* ${escapeInput(originalAmount)} ${escapeInput(currencyStr)}
               `;
     } else if (ctx.session.step === "awaitingWalletCurrency") {
       const walletAddress = ctx.session.recipientWalletAddress!;
