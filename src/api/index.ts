@@ -9,6 +9,14 @@ dotenv.config();
 const baseURL = process.env.COPPERX_API_BASE_URL;
 
 // --- Authentication ---
+
+/**
+ * Requests an OTP for the given email address.
+ *
+ * @param {string} email - the email address to request an OTP for
+ * @returns {Promise<RequestEmailOtpResponse>} - the API response
+ * @throws {ApiError} - if the API request fails
+ */
 export async function requestEmailOtp(email: string) {
   try {
     const response = await axios.post(`${baseURL}/auth/email-otp/request`, { email });
@@ -18,6 +26,15 @@ export async function requestEmailOtp(email: string) {
   }
 }
 
+/**
+ * Authenticates an email address using the given OTP and session ID.
+ *
+ * @param {string} email - the email address to authenticate
+ * @param {string} otp - the OTP to use for authentication
+ * @param {string} sid - the session ID used to tie the OTP to the user
+ * @returns {Promise<AuthenticateEmailOtpResponse>} - the API response
+ * @throws {ApiError} - if the API request fails
+ */
 export async function authenticateEmailOtp(email: string, otp: string, sid: string) {
   try {
     const response = await axios.post(`${baseURL}/auth/email-otp/authenticate`, {
@@ -31,6 +48,13 @@ export async function authenticateEmailOtp(email: string, otp: string, sid: stri
   }
 }
 
+/**
+ * Logs out a user with the given token.
+ *
+ * @param {string} token - the JWT token to use for logging out
+ * @returns {Promise<LogoutResponse>} - the API response
+ * @throws {ApiError} - if the API request fails
+ */
 export async function logout(token: string) {
   //Used later
   try {
@@ -43,6 +67,16 @@ export async function logout(token: string) {
   }
 }
 
+/**
+ * Retrieves the user profile associated with the given token.
+ *
+ * Makes an API request to fetch the user's profile information
+ * using the provided JWT token for authentication.
+ *
+ * @param {string} token - The JWT token used for authentication.
+ * @returns {Promise<any>} - The API response containing user profile data.
+ * @throws {ApiError} - If the API request fails.
+ */
 export async function getUserProfile(token: string) {
   //Used later
   try {
@@ -57,6 +91,16 @@ export async function getUserProfile(token: string) {
 
 // --- KYC ---
 
+/**
+ * Retrieves the KYC status associated with the given token.
+ *
+ * Makes an API request to fetch the user's KYC status
+ * using the provided JWT token for authentication.
+ *
+ * @param {string} token - The JWT token used for authentication.
+ * @returns {Promise<KycStatus>} - The API response containing KYC status data.
+ * @throws {ApiError} - If the API request fails.
+ */
 export async function getKycStatus(token: string) {
   //Used later
   try {
@@ -71,6 +115,17 @@ export async function getKycStatus(token: string) {
 
 // --- Wallet ---
 
+/**
+ * Retrieves a list of wallets associated with the given token,
+ * along with their respective balances.
+ *
+ * Makes an API request to fetch the user's wallets and balances
+ * using the provided JWT token for authentication.
+ *
+ * @param {string} token - The JWT token used for authentication.
+ * @returns {Promise<WalletsResponse>} - The API response containing a list of wallets and balances.
+ * @throws {ApiError} - If the API request fails.
+ */
 export async function getWalletBalances(token: string) {
   try {
     const response = await axios.get(`${baseURL}/wallets/balances`, {
@@ -82,6 +137,16 @@ export async function getWalletBalances(token: string) {
   }
 }
 
+/**
+ * Retrieves the user's default wallet.
+ *
+ * Makes an API request to fetch the user's default wallet
+ * using the provided JWT token for authentication.
+ *
+ * @param {string} token - The JWT token used for authentication.
+ * @returns {Promise<Wallet>} - The API response containing the default wallet.
+ * @throws {ApiError} - If the API request fails.
+ */
 export async function getDefaultWallet(token: string) {
   try {
     const response = await axios.get(`${baseURL}/wallets/default`, {
@@ -93,6 +158,17 @@ export async function getDefaultWallet(token: string) {
   }
 }
 
+/**
+ * Sets the user's default wallet to the given wallet ID.
+ *
+ * Makes an API request to set the user's default wallet
+ * using the provided JWT token for authentication.
+ *
+ * @param {string} token - The JWT token used for authentication.
+ * @param {string} walletId - The ID of the wallet to set as the default.
+ * @returns {Promise<Wallet>} - The API response containing the default wallet.
+ * @throws {ApiError} - If the API request fails.
+ */
 export async function setDefaultWallet(token: string, walletId: string) {
   try {
     const response = await axios.post(
@@ -110,6 +186,20 @@ export async function setDefaultWallet(token: string, walletId: string) {
 
 // --- Transfers ---
 
+/**
+ * Sends funds to an email address using the provided JWT token for authentication.
+ *
+ * Makes an API request to send funds to the given email address
+ * using the provided JWT token for authentication.
+ *
+ * @param {string} token - The JWT token used for authentication.
+ * @param {string} email - The email address to send funds to.
+ * @param {string} amount - The amount of funds to send.
+ * @param {string} currency - The currency to send funds in.
+ * @param {string} purposeCode - The purpose code to use for the transfer.
+ * @returns {Promise<Transfer>} - The API response containing the transfer.
+ * @throws {ApiError} - If the API request fails.
+ */
 export async function sendToEmail(
   token: string,
   email: string,
@@ -136,6 +226,20 @@ export async function sendToEmail(
   }
 }
 
+/**
+ * Sends funds to a wallet address using the provided JWT token for authentication.
+ *
+ * Makes an API request to send funds to the given wallet address
+ * using the provided JWT token for authentication.
+ *
+ * @param {string} token - The JWT token used for authentication.
+ * @param {string} walletAddress - The wallet address to send funds to.
+ * @param {string} amount - The amount of funds to send.
+ * @param {string} currency - The currency to send funds in.
+ * @param {string} purposeCode - The purpose code to use for the transfer.
+ * @returns {Promise<Transfer>} - The API response containing the transfer.
+ * @throws {ApiError} - If the API request fails.
+ */
 export async function sendToWallet(
   token: string,
   walletAddress: string,
@@ -162,6 +266,17 @@ export async function sendToWallet(
   }
 }
 
+/**
+ * Retrieves the last 10 transactions associated with the given token.
+ *
+ * Makes an API request to fetch the user's most recent transactions,
+ * limited to 10, using the provided JWT token for authentication.
+ *
+ * @param {string} token - The JWT token used for authentication.
+ * @returns {Promise<any>} - The API response containing transaction data.
+ * @throws {ApiError} - If the API request fails.
+ */
+
 export async function getLast10Transactions(token: string) {
   try {
     const response = await axios.get(`${baseURL}/transfers?page=1&limit=10`, {
@@ -174,6 +289,18 @@ export async function getLast10Transactions(token: string) {
 }
 
 // --- Withdraw ---
+
+/**
+ * Retrieves the balance of the user's wallet using the provided JWT token.
+ *
+ * Makes an API request to fetch the user's wallet balance,
+ * using the provided JWT token for authentication.
+ *
+ * @param {string} token - The JWT token used for authentication.
+ * @returns {Promise<any>} - The API response containing the wallet balance.
+ * @throws {ApiError} - If the API request fails.
+ */
+
 export async function getWalletBalance(token: string) {
   try {
     const response = await axios.get(`${baseURL}/wallets/balance`, {
@@ -244,6 +371,18 @@ export async function withdrawToBank(
 }
 
 // --- Pusher ---
+
+/**
+ * Authenticates with the Pusher notification service using the provided token, socket ID, and channel name.
+ *
+ * Sends a request to the Copperx API's notification authentication endpoint to authenticate the Pusher connection.
+ *
+ * @param {string} token - The JWT token used for authentication.
+ * @param {string} socketId - The socket ID associated with the Pusher connection.
+ * @param {string} channelName - The name of the Pusher channel to authenticate.
+ * @returns {Promise<any>} - The API response containing the authentication data.
+ * @throws {ApiError} - If the API request fails.
+ */
 export async function authenticatePusher(
   token: string,
   socketId: string,
@@ -275,6 +414,14 @@ export async function authenticatePusher(
 }
 
 // Token Expiration check
+
+/**
+ * Checks if the token is expired based on its expiration timestamp.
+ *
+ * @param {any} tokenData - The token data which includes the expiration timestamp.
+ * @returns {boolean} - Returns true if the token is expired or if token data is missing/invalid; otherwise, false.
+ */
+
 export function isTokenExpired(tokenData: any): boolean {
   if (!tokenData || !tokenData.expireAt) {
     return true; // Assume expired if no data
