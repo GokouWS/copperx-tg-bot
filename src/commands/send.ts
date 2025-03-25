@@ -19,6 +19,16 @@ import {
 import { WalletsResponse } from "../types";
 import { buildSendMenu, cancelButton } from "../utils/menu";
 
+/**
+ * Handles the /send command, providing options for sending funds or viewing recent transactions.
+ *
+ * This function sends a message to the user with a menu containing options to send funds to an
+ * email address, send funds to a wallet address, or view the last 10 transactions. The user's
+ * session token is retrieved, and an inline keyboard menu is built and displayed.
+ *
+ * @param {MyContext} ctx - The Telegram bot context, which includes session data and functions
+ *                          for interacting with the Telegram API.
+ */
 export async function handleSend(ctx: MyContext) {
   const token = ctx.session.tokenData!.token;
   const menu = buildSendMenu(ctx);
@@ -30,6 +40,17 @@ export async function handleSend(ctx: MyContext) {
 }
 
 // --- Send to Email ---
+
+/**
+ * Initiates the process of sending funds to an email address.
+ *
+ * This function sends a reply message to the user indicating that they should
+ * provide the recipient's email address. It also updates the session step to
+ * "awaitingRecipientEmail" to track the progress of the send flow.
+ *
+ * @param ctx - The Telegram bot context, which includes session data
+ * and functions for interacting with the Telegram API.
+ */
 export async function handleSendEmail(ctx: MyContext) {
   const token = ctx.session.tokenData!.token;
   sendReplyMessage(ctx, "Email", "email");
@@ -38,6 +59,15 @@ export async function handleSendEmail(ctx: MyContext) {
 }
 
 // --- Input handlers for Send to Email ---
+
+/**
+ * Handles the input for the recipient email address when sending funds via email.
+ *
+ * Validates the input to ensure it is a valid email address.
+ * If the input is invalid, sends an error message back to the user.
+ * If the input is valid, stores the email address in the session and
+ * asks the user to input the amount.
+ */
 export async function handleRecipientEmailInput(ctx: MyContext) {
   // Guard clause: Check if ctx.message is a TextMessage
   const messageText = getMessageText(ctx);
@@ -57,6 +87,14 @@ export async function handleRecipientEmailInput(ctx: MyContext) {
   ctx.session.step = "awaitingAmount";
 }
 
+/**
+ * Handler for amount input after selecting the "Send to Email" option.
+ *
+ * Validates the input amount and checks if it is a valid number.
+ * If the input is invalid, it sends a message with an error code.
+ * If the input is valid, it sends a message asking the user to
+ * select a currency.
+ */
 export async function handleAmountInput(ctx: MyContext) {
   // Guard clause: Check if ctx.message is a TextMessage
   const messageText = getMessageText(ctx);
@@ -81,6 +119,10 @@ export async function handleAmountInput(ctx: MyContext) {
   ctx.session.emailAmount = amount;
 }
 
+/**
+ * Handle currency selection for sending to email or wallet.
+ * @param ctx Context with session data and callback data.
+ */
 export async function handleCurrencySelection(ctx: MyContext) {
   const callbackData = getCallbackQueryData(ctx);
   if (!callbackData) {
@@ -200,6 +242,12 @@ export async function handleCurrencySelection(ctx: MyContext) {
 }
 
 // --- Send to Wallet ---
+
+/**
+ * Handles the /sendwallet command by sending a message asking for the recipient's wallet address and setting the step to "awaitingWalletAddress".
+ *
+ * @param ctx - The Telegram bot context, which includes session data and functions for interacting with the Telegram API.
+ */
 export async function handleSendWallet(ctx: MyContext) {
   const token = ctx.session.tokenData!.token;
 
@@ -209,6 +257,19 @@ export async function handleSendWallet(ctx: MyContext) {
 }
 
 // --- Input handlers for Send to Wallet ---
+
+/**
+ * Handles the input of the recipient wallet address during the send to wallet process.
+ *
+ * This function retrieves the wallet address entered by the user, validates its format,
+ * and updates the session with the recipient wallet address if valid. If the input is
+ * empty or invalid, an appropriate error message is sent to the user. Upon successful
+ * validation, the user is prompted to enter the amount, and the session step is updated
+ * to "awaitingWalletAmount".
+ *
+ * @param ctx - The Telegram bot context, which includes session data and functions
+ *              for interacting with the Telegram API.
+ */
 export async function handleWalletAddressInput(ctx: MyContext) {
   const messageText = getMessageText(ctx);
   if (!messageText) {
@@ -231,6 +292,17 @@ export async function handleWalletAddressInput(ctx: MyContext) {
   ctx.session.step = "awaitingWalletAmount";
 }
 
+/**
+ * Handles the input of the wallet amount during the send to wallet process.
+ *
+ * This function validates the user's input, ensuring that it is a valid number
+ * greater than zero. If the input is invalid, an error message is sent to the user.
+ * If the input is valid, it is stored in the session and the user is prompted to
+ * select a currency. The session step is then updated to "awaitingWalletCurrency".
+ *
+ * @param ctx - The Telegram bot context, which includes session data and functions
+ *              for interacting with the Telegram API.
+ */
 export async function handleWalletAmountInput(ctx: MyContext) {
   const messageText = getMessageText(ctx);
   if (!messageText) {
@@ -252,6 +324,11 @@ export async function handleWalletAmountInput(ctx: MyContext) {
   ctx.session.step = "awaitingWalletCurrency";
 }
 
+/**
+ * Handles the /last10transactions command, which shows the last 10 transactions associated with the user's account.
+ *
+ * @param {MyContext} ctx - The Telegram bot context, which includes session data and functions for interacting with the Telegram API.
+ */
 export async function handleLast10Transactions(ctx: MyContext) {
   const token = ctx.session.tokenData!.token;
   try {
@@ -285,11 +362,45 @@ export async function handleLast10Transactions(ctx: MyContext) {
   }
 }
 
+/**
+ * Builds an inline keyboard containing a single "Cancel" button.
+ *
+ * @param ctx - The Telegram bot context, which includes session data and functions for interacting with the Telegram API.
+ * @returns An inline keyboard markup containing a single "Cancel" button.
+ */
 function cancelKeyboard(ctx: MyContext) {
   const canelBtn = cancelButton(ctx);
   return Markup.inlineKeyboard([canelBtn], { columns: 1 });
 }
 
+/**
+ * Helper function to send a reply message to the user when they interact with the
+ * Send to Email/Wallet feature.
+ *
+ * The message content is determined by the current step in the conversation.
+ * The step is determined by `ctx.session.step`. The possible values for `step`
+ * are:
+ *   - "email"
+ *   - "emailEmpty"
+ *   - "emailInvalid"
+ *   - "wallet"
+ *   - "walletEmpty"
+ *   - "walletInvalid"
+ *   - "amount"
+ *   - "amountEmpty"
+ *   - "amountInvalid"
+ *   - "currency"
+ *
+ * If `step` is "currency", the function sends an inline keyboard with all the
+ * supported currencies and a "Cancel" button. Otherwise, it sends a plain text
+ * message with the content determined by the step.
+ *
+ * @param ctx - The Telegram bot context, which includes session data and functions
+ *              for interacting with the Telegram API.
+ * @param type - The type of the conversation (either "Email" or "Wallet").
+ * @param step - The current step in the conversation.
+ * @returns The reply message sent to the user.
+ */
 function sendReplyMessage(ctx: MyContext, type: string, step: string) {
   let message = `${type === "Wallet" ? "💸" : "📧"} Send to ${type}:\n\n`;
 
