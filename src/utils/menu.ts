@@ -53,3 +53,21 @@ export function buildSendMenu(ctx: MyContext) {
 export function cancelButton(ctx: MyContext) {
   return Markup.button.callback("🚫 Cancel", "cancel_button");
 }
+
+export function buildReplyKeyboard(ctx: MyContext) {
+  const isLoggedIn = ctx.session.tokenData && !isTokenExpired(ctx.session.tokenData);
+
+  let keyboard: any;
+  if (isLoggedIn) {
+    keyboard = Markup.keyboard([
+      ["/balance", "/defaultwallet"],
+      ["/send", "/withdraw"],
+      ["/last10transactions", "/logout"],
+      ["/help"],
+    ]).resize(); // Add resize() for a better look
+  } else {
+    keyboard = Markup.keyboard([["/login", "/help"]]).resize();
+  }
+
+  return keyboard;
+}
