@@ -24,6 +24,11 @@ import { UserProfile } from "../types";
 //   return url.replace(/[()]/g, "\\$&");
 // }
 
+/**
+ * Handler for the /login command.
+ * Asks the user to enter their Copperx email address.
+ * Sets the session to "awaitingEmail".
+ */
 export async function handleLogin(ctx: MyContext) {
   ctx.reply("Please enter your Copperx email address:");
   ctx.session.step = "awaitingEmail"; // Use context session
@@ -58,6 +63,19 @@ export async function handleEmailInput(ctx: MyContext) {
   }
 }
 
+/**
+ * Handles the OTP input during the login process.
+ *
+ * This function validates the OTP format, checks session data,
+ * and authenticates the OTP. Upon successful authentication,
+ * it initializes the user session, fetches the user profile,
+ * and checks the KYC status. If the KYC is approved, the user
+ * can access all features. Otherwise, instructs the user to
+ * complete KYC on the Copperx platform.
+ *
+ * @param ctx - The Telegram bot context, which includes session data
+ * and functions for interacting with the Telegram API.
+ */
 export async function handleOtpInput(ctx: MyContext) {
   const menu = buildMenu(ctx);
   // Guard clause: check if ctx.message is a TextMessage
@@ -139,7 +157,21 @@ export async function handleOtpInput(ctx: MyContext) {
   }
 }
 
-// Fetch Profile, store specific fields in session, and setup deposit notifications
+/**
+ * Fetches the user profile using the provided token and initializes the user session.
+ *
+ * This function retrieves the user profile associated with the given token
+ * and stores specific fields in the session. It also sets up deposit notifications
+ * if the organization ID is valid.
+ *
+ * @param {MyContext} ctx - The Telegram bot context, which includes session data
+ * and functions for interacting with the Telegram API.
+ * @param {string} [token] - Optional JWT token used for authentication. If not
+ * provided, the function uses the token from the session.
+ * @returns {Promise<UserProfile | undefined>} - The user profile data if successful,
+ * otherwise undefined if an error occurs or if the organization ID is missing.
+ * @throws {Error} - If the chat ID is undefined.
+ */
 export async function handleFetchProfile(ctx: MyContext, token?: string) {
   if (token === undefined) token = ctx.session.tokenData!.token;
 
@@ -165,6 +197,18 @@ export async function handleFetchProfile(ctx: MyContext, token?: string) {
   }
 }
 
+/**
+ * Displays the user profile associated with the given token.
+ *
+ * This function retrieves the user profile data and formats it into a
+ * Markdown-formatted string. It then sends the formatted message to the
+ * user, along with the main menu.
+ *
+ * @param {MyContext} ctx - The Telegram bot context, which includes session data
+ * and functions for interacting with the Telegram API.
+ * @throws {Error} - If an error occurs while fetching the user profile or
+ * displaying the message.
+ */
 export async function handleDisplayProfile(ctx: MyContext) {
   const token = ctx.session.tokenData!.token;
   const menu = buildMenu(ctx);
@@ -179,6 +223,18 @@ export async function handleDisplayProfile(ctx: MyContext) {
   }
 }
 
+/**
+ * Formats a user profile into a human-readable string.
+ *
+ * Constructs a message containing the user's profile details including
+ * their ID, full name, email, KYC status, and account type. The message
+ * is formatted with line breaks for readability and includes emojis
+ * to enhance the user interface.
+ *
+ * @param {UserProfile} userProfile - The user's profile data containing
+ * fields such as id, firstName, lastName, email, status, and type.
+ * @returns {string} A formatted string representing the user's profile details.
+ */
 function formatProfileMessage(userProfile: UserProfile): any {
   const id = userProfile.id || "";
   const firstName = userProfile.firstName || "";
