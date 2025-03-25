@@ -74,7 +74,7 @@ export function setupCommands() {
             pending.purposeCode,
           );
           await ctx.editMessageText(
-            `🟢 Successfully sent ${pending.amount} ${pending.currency} to ${pending.email}.  Transaction ID: ${result.id}`,
+            `🟢 Successfully sent ${pending.amount} ${pending.currency} \nTo: ${pending.email}  \nTransaction ID: ${result.id}`,
           );
           break;
         case "sendwallet":
@@ -87,7 +87,7 @@ export function setupCommands() {
             pending.purposeCode,
           );
           await ctx.editMessageText(
-            `🟢 Successfully sent ${pending.amount} ${pending.currency} to ${pending.walletAddress}. Transaction ID: ${result.id}`,
+            `🟢 Successfully sent ${pending.amount} ${pending.currency} \nTo: ${pending.walletAddress} \nTransaction ID: ${result.id}`,
           );
           break;
         default:
