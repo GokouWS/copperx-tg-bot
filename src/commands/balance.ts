@@ -14,6 +14,14 @@ import {
 import { buildMenu, cancelButton } from "../utils/menu";
 import { getNetworkName } from "../utils/networks";
 
+/**
+ * Handle the /balance command.
+ *
+ * Loads the user's current wallet balances and sends a message with the formatted balances.
+ * The balances are grouped by network and include the network name.
+ * If the user has no wallets, a message is sent indicating that.
+ * @param ctx Context with session data and functions for interacting with the Telegram API.
+ */
 export async function handleBalance(ctx: MyContext) {
   const token = ctx.session.tokenData!.token; // Use non-null assertion
 
@@ -60,6 +68,13 @@ export async function handleBalance(ctx: MyContext) {
   }
 }
 
+/**
+ * Handles the /defaultwallet command.
+ *
+ * Retrieves the user's default wallet, if any, and sends a message with the formatted default wallet information.
+ * If the user has no default wallet set, a message is sent indicating that and providing instructions for setting one.
+ * @param ctx Context with session data and functions for interacting with the Telegram API.
+ */
 export async function handleDefaultWallet(ctx: MyContext) {
   const token = ctx.session.tokenData!.token;
 
@@ -87,6 +102,13 @@ export async function handleDefaultWallet(ctx: MyContext) {
   }
 }
 
+/**
+ * Handles the /changedefaultwallet command.
+ *
+ * Retrieves the user's list of wallets, and sends a message with an inline keyboard menu containing the wallet IDs.
+ * The user can then choose a wallet ID to set as their default wallet.
+ * @param ctx Context with session data and functions for interacting with the Telegram API.
+ */
 export async function handleChangeDefaultWallet(ctx: MyContext) {
   const token = ctx.session.tokenData!.token;
 
@@ -112,6 +134,19 @@ export async function handleChangeDefaultWallet(ctx: MyContext) {
     handleApiError(ctx, error);
   }
 }
+/**
+ * Handles the user's choice of default wallet.
+ *
+ * This function processes the callback query data when a user selects a wallet
+ * to set as their default. It extracts the wallet ID from the callback data and
+ * attempts to set it as the default wallet using an API request. If successful,
+ * it acknowledges the user's action with a confirmation message. In case of an
+ * error, an appropriate error message is displayed. The session step is set to "idle"
+ * after processing.
+ *
+ * @param ctx - The Telegram bot context, which includes session data and functions
+ *              for interacting with the Telegram API.
+ */
 export async function handleWalletChoice(ctx: MyContext) {
   const token = ctx.session.tokenData!.token;
   sendLoadingMessage(ctx, "Setting your default wallet");
