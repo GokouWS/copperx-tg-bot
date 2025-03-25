@@ -3,6 +3,16 @@ import { MyContext } from "../bot"; // Import your custom context
 import { isTokenExpired } from "../api";
 import { buildMenu } from "./menu";
 
+/**
+ * Checks if the user has a valid session token. If not, it asks the user to log in.
+ * If the token is expired, it clears the session and asks the user to log in again.
+ *
+ * @remarks
+ * This middleware should be used before any handler that requires a valid session.
+ * @example
+ * bot.use(checkTokenExpiration);
+ * bot.command("myCommand", myCommandHandler);
+ */
 export const checkTokenExpiration: MiddlewareFn<MyContext> = async (ctx, next) => {
   const token = ctx.session.tokenData;
 
