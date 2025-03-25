@@ -4,6 +4,7 @@ import { initializeUserSession } from "../bot"; // Import
 import { getUserProfile, isTokenExpired } from "../api";
 import { buildMenu } from "../utils/menu";
 import { handleFetchProfile } from "./login";
+import { escapeInput } from "../utils/helpers";
 
 export async function handleStart(ctx: MyContext) {
   const menu = buildMenu(ctx);
@@ -53,5 +54,5 @@ Available Commands:
 /last10transactions - View your last 10 transactions
 /withdraw - Withdraw funds to your bank account
   `;
-  await ctx.replyWithMarkdownV2(message, menu);
+  await ctx.replyWithMarkdownV2(escapeInput(message), menu);
 }
