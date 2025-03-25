@@ -6,6 +6,14 @@ export class ApiError extends Error {
   statusCode?: number;
   responseBody?: any;
 
+  /**
+   * Constructs a new ApiError instance.
+   *
+   * @param message - The error message.
+   * @param statusCode - Optional HTTP status code associated with the error.
+   * @param responseBody - Optional response body or additional error details.
+   */
+
   constructor(message: string, statusCode?: number, responseBody?: any) {
     super(message);
     this.name = "ApiError";
@@ -16,6 +24,17 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Creates an ApiError from an unknown error object.
+ *
+ * Handles the conversion of AxiosError instances to ApiError instances,
+ * extracting the error message, HTTP status code, and response body as
+ * needed. If the error is not an AxiosError, it falls back to the default
+ * behavior of creating an ApiError with the error message (if available).
+ *
+ * @param error - The error object to convert to an ApiError.
+ * @returns An ApiError instance created from the provided error.
+ */
 export function createApiError(error: unknown): ApiError {
   if (error instanceof AxiosError) {
     const statusCode = error.response?.status;
@@ -72,7 +91,17 @@ export function createApiError(error: unknown): ApiError {
   }
 }
 
-// No changes needed in handleApiError, it's already correct:
+/**
+ * Handles an API error by replying to the user with a descriptive message,
+ * while also logging the error details to the console.
+ *
+ * If the error is an instance of ApiError, it includes the error message and
+ * HTTP status code (if available) in the reply. Otherwise, it simply replies
+ * with a generic error message.
+ *
+ * @param ctx - The Telegraf context object.
+ * @param error - The error object to handle.
+ */
 export function handleApiError(ctx: Context, error: unknown) {
   if (error instanceof ApiError) {
     let message = error.message;
