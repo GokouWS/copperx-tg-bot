@@ -61,8 +61,8 @@
 1.  **Clone the repository:**
 
     ```bash
-    git clone <your_repository_url>
-    cd <your_repository_name>
+    git clone <https://github.com/GokouWS/copperx-tg-bot.git>
+    cd <GokouWS/copperx-tg-bot>
     ```
 
 2.  **Install dependencies:**
