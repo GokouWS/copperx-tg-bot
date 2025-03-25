@@ -13,12 +13,39 @@ import { getCallbackQueryData } from "../utils/helpers";
 import { handleApiError } from "../utils/errorHandler";
 import { handlers } from "./handlers";
 
+/**
+ * Sets up all command handlers and action handlers for the bot.
+ *
+ * The command handlers are:
+ * - `/start` command (in its own file)
+ * - `/login` command
+ * - `/profile` command
+ * - `/balance` command
+ * - `/defaultwallet` command
+ * - `/changedefaultwallet` command
+ * - `/send` command
+ * - `/sendemail` command
+ * - `/sendwallet` command
+ * - `/last10transactions` command
+ * - `/withdraw` command
+ * - `/logout` command
+ *
+ * The action handlers are:
+ * - Confirmation actions for transactions
+ * - Action handlers for buttons in the `/start` menu
+ * - Action handlers for buttons in the command menus
+ *
+ * This function should be called before launching the bot.
+ */
 export function setupCommands() {
   console.log("setupCommands: START");
   // --- Command Handlers ---
 
-  // Start command (now in its own file)
+  // Start command
   bot.command("start", start.handleStart);
+
+  // Help command
+  bot.command("help", start.handleHelp);
 
   // Login command
   bot.command("login", login.handleLogin);
@@ -130,7 +157,7 @@ export function setupCommands() {
 
   bot.action("help_button", async (ctx: MyContext) => {
     await ctx.answerCbQuery();
-    await ctx.reply(`Available Commands: ...`); // Your help message
+    await start.handleHelp(ctx); // Your help message
   });
 
   // --- Action Handlers for commands buttons ---
@@ -186,39 +213,6 @@ export function setupCommands() {
       ctx.reply("Sorry, I didn't understand that command.");
     }
   });
-
-  // General message handler.  This needs to come *after* specific command handlers.
-  // bot.on("text", async (ctx: MyContext) => {
-  //   switch (ctx.session.step) {
-  //     case "awaitingEmail":
-  //       await login.handleEmailInput(ctx);
-  //       break;
-  //     case "awaitingOtp":
-  //       await login.handleOtpInput(ctx);
-  //       break;
-  //     case "awaitingRecipientEmail":
-  //       await send.handleRecipientEmailInput(ctx);
-  //       break;
-  //     case "awaitingAmount":
-  //       await send.handleAmountInput(ctx);
-  //       break;
-  //     case "awaitingCurrency":
-  //       await send.handleCurrencyInput(ctx);
-  //       break;
-  //     case "awaitingWalletAddress":
-  //       await send.handleWalletAddressInput(ctx);
-  //       break;
-  //     case "awaitingWalletAmount":
-  //       await send.handleWalletAmountInput(ctx);
-  //       break;
-  //     case "awaitingWalletCurrency":
-  //       await send.handleWalletCurrencyInput(ctx);
-  //       break;
-  //     default:
-  //       // Show a default message.
-  //       ctx.reply("Sorry, I didn't understand that command.");
-  //   }
-  // });
 
   console.log("setupCommands: END");
 }

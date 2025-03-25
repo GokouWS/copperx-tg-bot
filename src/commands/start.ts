@@ -29,3 +29,29 @@ export async function handleStart(ctx: MyContext) {
     await ctx.reply("Failed to initialize user session.");
   }
 }
+
+/**
+ * Shows the help message with available commands.
+ *
+ * @param ctx - The Telegram bot context, which includes session data
+ * and functions for interacting with the Telegram API.
+ */
+export async function handleHelp(ctx: MyContext) {
+  const menu = buildMenu(ctx);
+  const message = `
+Available Commands:
+
+/start - Start the bot
+/help - Show this help message
+/login - Log in to your Copperx account
+/balance - Check your wallet balances
+/defaultwallet - View your default wallet
+/changedefaultwallet - Change your default wallet
+/send - Send funds
+/sendemail - Send funds to an email address
+/sendwallet - Send funds to a wallet address
+/last10transactions - View your last 10 transactions
+/withdraw - Withdraw funds to your bank account
+  `;
+  await ctx.replyWithMarkdownV2(message, menu);
+}
