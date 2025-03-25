@@ -1,6 +1,6 @@
 # Copperx Payout Telegram Bot
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()  [![License](https://img.shields.io/badge/license-MIT-blue.svg)]()  This Telegram bot allows users to interact with the Copperx Payout API to manage their USDC stablecoin balance, send and receive funds, and view transaction history, all directly within Telegram.  It's built with TypeScript, Node.js, Telegraf, and uses Redis for session management.
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()  [![License](https://img.shields.io/badge/license-MIT-blue.svg)]()  This Telegram bot allows users to interact with the Copperx Payout API to manage their USDC stablecoin balance, send and receive funds, and view transaction history, all directly within Telegram.  It's built with TypeScript, Node.js, Telegraf, and uses Redis for session management. Test it out on Telegram [https://t.me/copperx_tg_bot](https://t.me/copperx_tg_bot)
 
 ## Table of Contents
 
