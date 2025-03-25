@@ -96,6 +96,7 @@ interface SessionData {
   currency?: string;
   recipientWalletAddress?: string;
   walletAmount?: string;
+  withdrawalAmount?: string;
   pendingTransaction?: // Add pendingTransaction to session
   | {
         type: "sendemail";

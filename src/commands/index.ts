@@ -45,6 +45,9 @@ export function setupCommands() {
   bot.command("sendwallet", checkTokenExpiration, send.handleSendWallet); // Add middleware
   bot.command("last10transactions", checkTokenExpiration, send.handleLast10Transactions); // Add middleware
 
+  // Withdraw commands
+  bot.command("withdraw", checkTokenExpiration, withdraw.handleWithdraw);
+
   //Logout command
   bot.command("logout", logout.handleLogout);
 
@@ -161,7 +164,7 @@ export function setupCommands() {
   );
   bot.action("withdraw_button", checkTokenExpiration, async (ctx: MyContext) => {
     await ctx.answerCbQuery();
-    await send.handleSend(ctx);
+    await withdraw.handleWithdraw(ctx);
   });
   bot.action("default_wallet_button", checkTokenExpiration, async (ctx: MyContext) => {
     await ctx.answerCbQuery();
