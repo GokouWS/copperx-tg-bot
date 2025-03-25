@@ -96,7 +96,7 @@ export async function setupDepositNotifications(
     bot.telegram.sendMessage(
       chatId,
       `💰 *New Deposit Received*\n\n` +
-        `${data.amount} USDC deposited on ${getNetworkName(data.network)}`,
+        `${data.amount} USDC deposited on ${getNetworkName(data.metadata.network)}`,
       { parse_mode: "MarkdownV2" },
     );
   });

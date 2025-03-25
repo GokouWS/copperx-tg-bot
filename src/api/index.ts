@@ -174,6 +174,51 @@ export async function getLast10Transactions(token: string) {
 }
 
 // --- Withdraw ---
+export async function getWalletBalance(token: string) {
+  try {
+    const response = await axios.get(`${baseURL}/wallets/balance`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    throw createApiError(error);
+  }
+}
+
+// amount: string;
+// currency: string;
+// destinationCountry: string;
+// onlyRemittance: boolean;
+// preferredBankAccountId: string;
+// sourceCountry: string;
+export async function getBankAccount(token: string) {
+  const amount = "1";
+  const currency = "USD";
+  const destinationCountry = "US";
+  const onlyRemittance = true;
+  const preferredBankAccountId = "";
+  const sourceCountry = "none";
+  try {
+    const response = await axios.post(
+      `${baseURL}/quotes/offramp`,
+      {
+        amount,
+        currency,
+        destinationCountry,
+        onlyRemittance,
+        preferredBankAccountId,
+        sourceCountry,
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    throw createApiError(error);
+  }
+}
+
 export async function withdrawToBank(
   token: string,
   bankAccountId: string,
@@ -206,19 +251,19 @@ export async function authenticatePusher(
 ) {
   // console.log("Authenticating Pusher...");
   try {
-    // console.log("Sending Pusher auth request...");
-    // const response = await axios.post(
-    //   `${baseURL}/notifications/auth`,
-    //   {
-    //     socket_id: socketId,
-    //     channel_name: channelName,
-    //   },
-    //   {
-    //     headers: { Authorization: `Bearer ${token}` },
-    //   },
-    // );
+    console.log("Sending Pusher auth request...");
+    const response = await axios.post(
+      `${baseURL}/notifications/auth`,
+      {
+        socket_id: socketId,
+        channel_name: channelName,
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
     // console.log("Pusher auth response:", response);
-    // return response.data;
+    return response.data;
 
     const socketData = await pusher.authenticate(socketId, channelName);
 
